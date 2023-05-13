@@ -2,9 +2,11 @@ package tree
 
 import (
 	"fmt"
+	"math"
 	"os"
-	"strings"
 	"time"
+
+	"github.com/joomcode/errorx"
 )
 
 var (
@@ -13,51 +15,93 @@ var (
 	AllTrees     = []FileTree{}
 )
 
-func (tree *FileTree) Walk(depth int) (size int64, latestModified *time.Time) {
+func (tree *FileTree) Walk(depth int, isComprehensive bool) (errsBelow []error, size int64, numFilesR int64, latestModified *time.Time) {
+	tree.Comprehensive = isComprehensive
 
 	ents, err := os.ReadDir(tree.BasePath)
-	tree.Err = err
+	tree.Err = []error{}
+	if err != nil {
+		tree.Err = append(tree.Err, errorx.Decorate(err, "failed to open `tree.BasePath`"))
+	}
 
 	var (
-		newestModified *time.Time = nil
-		startWalk                 = time.Now()
+		newestModified     *time.Time = nil
+		startWalk                     = time.Now()
+		numFilesInSubtrees int64      = 0
 	)
 	for _, e := range ents {
-		if e.IsDir() {
-			if strings.HasPrefix(e.Name(), ".") {
-				continue
-			}
-			subTree := FileTree{
-				BasePath: fmt.Sprintf("%s/%s", tree.BasePath, e.Name()),
-			}
-			subSize, currModified := subTree.Walk(depth + 1)
-			tree.Size += subSize
-			tree.SubTrees = append(tree.SubTrees, subTree)
+		fullPath := fmt.Sprintf("%s/%s", tree.BasePath, e.Name())
 
+		if e.IsDir() {
+			subTree := FileTree{
+				BasePath: fullPath,
+			}
+			err, subSize, subNumFiles, currModified := subTree.Walk(depth+1, isComprehensive)
+			if len(err) > 0 {
+				tree.Err = append(tree.Err, err...)
+			}
+			tree.Size += subSize
+			numFilesInSubtrees += subNumFiles
+
+			tree.SubTrees = append(tree.SubTrees, subTree)
 			newestModified = GetNewestTime(newestModified, currModified)
 		} else if e.Type().IsRegular() {
-			f, err := e.Info()
+			fStat, err := e.Info()
+			nf := File{
+				Err:        err,
+				ByteSample: nil,
+			}
 			if err != nil {
-				tree.Files = append(tree.Files, File{"", 0, err})
+				tree.Err = append(tree.Err, errorx.Decorate(err, "failed to stat file"))
 			} else {
-				tree.Files = append(tree.Files, File{f.Name(), f.Size(), err})
-				tree.Size += f.Size()
+				var sample *ByteSample = nil
 
-				currModified := f.ModTime()
+				if isComprehensive {
+					fTmp, err := os.OpenFile(fullPath, os.O_RDONLY, 0400)
+					if err != nil {
+						tree.Err = append(tree.Err, errorx.Decorate(err, "failed to open file to get `ByteSample` for 'Comprehensive' scan"))
+					} else if fStat.Size() > 0 {
+						sample = &ByteSample{
+							MiddleOffset: int64(math.Ceil(float64(fStat.Size()) / 2.0)),
+							Bytes:        make([]byte, 1000),
+						}
+
+						if fStat.Size() <= NumSampleBytes {
+							_, err = fTmp.Read(sample.Bytes)
+							if err != nil {
+								tree.Err = append(tree.Err, errorx.Decorate(err, "failed to read WHOLE file"))
+							}
+						} else {
+							n, err := fTmp.ReadAt(sample.Bytes, sample.MiddleOffset-(NumSampleBytes/2))
+							if err != nil && n < NumSampleBytes { // Should only return the error here if we didn't read enough bytes
+								tree.Err = append(tree.Err, errorx.Decorate(err, "failed to read PARTIAL file"))
+							}
+						}
+					} else {
+						sample = &ByteSample{}
+					}
+
+				}
+
+				nf.Name = fStat.Name()
+				nf.ByteSample = sample
+				nf.Size = fStat.Size()
+
+				tree.Size += fStat.Size()
+				currModified := fStat.ModTime()
 				newestModified = GetNewestTime(newestModified, &currModified)
 			}
+
+			tree.Files = append(tree.Files, nf)
 		}
 	}
 	tree.TimeTaken = time.Since(startWalk)
-
+	tree.NumFilesTotal = int64(len(tree.Files)) + numFilesInSubtrees
 	tree.LastModified = newestModified
 	tree.LastVisited = time.Now()
 	tree.Depth = depth
-	tree.Priority = CalculatePriority(*tree)
 
-	AllTrees = append(AllTrees, *tree)
-
-	return tree.Size, newestModified
+	return tree.Err, tree.Size, tree.NumFilesTotal, newestModified
 }
 
 func GetNewestTime(curr *time.Time, new *time.Time) *time.Time {
@@ -81,30 +125,4 @@ func PrintTree(t *FileTree) {
 	for _, t := range t.SubTrees {
 		PrintTree(&t)
 	}
-}
-
-func CalculatePriority(t FileTree) int64 {
-	// FilesDiff?
-	// DirsDiff?
-
-	// older -> good
-	// lastVisited := 10 * float64((UnixYear2048-t.LastVisited.Unix())/UnixYear2048)
-	// // newer -> good
-	// var lastModified float64 = 0
-	// if t.LastModified != nil {
-	// 	lastModified = 0 //100 * float64(UnixYear2048/(UnixYear2048-t.LastModified.Unix()))
-	// }
-	// shorter -> good
-
-	// larger -> good
-	var size int64 = 1
-	var timeTaken float64
-	if t.Size > 0 {
-		size = t.Size
-		timeTaken = 10 * (float64(time.Hour.Nanoseconds()) / float64(t.TimeTaken.Nanoseconds()))
-	}
-	// deeper -> good
-	deeper := t.Depth
-
-	return int64(float64(size*int64(deeper)) * (float64(1) / float64(timeTaken))) // * int64((float64(lastVisited) + float64(lastModified))
 }

@@ -2,18 +2,6 @@ package tree
 
 import "time"
 
-// BasePath    string
-// Files       []File
-// SubTrees    []FileTree
-// Err         error
-// LastVisited time.Time
-// TimeTaken   time.Duration
-// Depth       int
-
-// Size         int64
-// LastModified *time.Time
-// Priority     int64
-
 /*
 	Determine all the differences between two trees and store them in an output FileTree
 */
@@ -24,16 +12,14 @@ func CompareTrees(a, b *FileTree) FileTreeDiff {
 
 	if a == nil {
 		ret := FileTreeDiff{
-			NewerPath:        b.BasePath,
-			FilesDiff:        b.Files,
-			SubTreesDiff:     []FileTreeDiff{},
-			NewerErr:         b.Err,
-			LastVisitedDiff:  b.LastVisited.Sub(time.Time{}),
-			LastModifiedDiff: time.Time{}.Sub(time.Time{}),
-			TimeTakenDiff:    b.TimeTaken,
-			DepthDiff:        b.Depth,
-			SizeDiff:         b.Size,
-			PriorityDiff:     b.Priority,
+			NewerPath:         b.BasePath,
+			FilesDiff:         b.Files,
+			SubTreesDiff:      []FileTreeDiff{},
+			LastVisitedDiff:   b.LastVisited.Sub(time.Time{}),
+			LastModifiedDiff:  time.Time{}.Sub(time.Time{}),
+			TimeTakenDiff:     b.TimeTaken,
+			SizeDiff:          b.Size,
+			NumFilesTotalDiff: b.NumFilesTotal,
 		}
 
 		if b.LastModified != nil {
@@ -47,19 +33,18 @@ func CompareTrees(a, b *FileTree) FileTreeDiff {
 			}
 		}
 
+		ret.DiffCompleted = time.Now()
 		return ret
 	} else if b == nil {
 		ret := FileTreeDiff{
-			NewerPath:        a.BasePath,
-			FilesDiff:        []File{},
-			SubTreesDiff:     []FileTreeDiff{},
-			NewerErr:         nil,
-			LastVisitedDiff:  time.Time{}.Sub(a.LastVisited),
-			TimeTakenDiff:    -a.TimeTaken,
-			DepthDiff:        -a.Depth,
-			SizeDiff:         -a.Size,
-			LastModifiedDiff: time.Time{}.Sub(time.Time{}),
-			PriorityDiff:     -a.Priority,
+			NewerPath:         a.BasePath,
+			FilesDiff:         []File{},
+			SubTreesDiff:      []FileTreeDiff{},
+			LastVisitedDiff:   time.Time{}.Sub(a.LastVisited),
+			TimeTakenDiff:     -a.TimeTaken,
+			SizeDiff:          -a.Size,
+			LastModifiedDiff:  time.Time{}.Sub(time.Time{}),
+			NumFilesTotalDiff: -a.NumFilesTotal,
 		}
 
 		if a.LastModified != nil {
@@ -73,8 +58,11 @@ func CompareTrees(a, b *FileTree) FileTreeDiff {
 			}
 		}
 
+		ret.DiffCompleted = time.Now()
 		return ret
 	}
+
+	retDiff := FileTreeDiff{}
 
 	// 1. Basic checks
 	// Ignored (highly variable)
@@ -84,11 +72,14 @@ func CompareTrees(a, b *FileTree) FileTreeDiff {
 	simpleEqual := BasicTreesEqual(*a, *b)
 	if simpleEqual {
 		if a.BasePath == b.BasePath {
-			return FileTreeDiff{}
+			return retDiff
 		}
-		ret := FileTreeDiff{NewerPath: b.BasePath}
-		return ret
+		retDiff.NewerPath = b.BasePath
+		return retDiff
 	}
+
+	// 0. Need to determine how to compare files i.e. whether the trees are BOTH "Comprehensive"
+	retDiff.Comprehensive = (*a).Comprehensive && (*b).Comprehensive
 
 	// 2. Compare files at tree roots
 	differentFiles := []File{}
@@ -101,7 +92,7 @@ func CompareTrees(a, b *FileTree) FileTreeDiff {
 	notMatchedIndices := []int{}
 	for i, f := range b.Files {
 		aFile, ok := aFilesMap[f.Name]
-		if !ok || (ok && !BasicFilesEqual(f, *aFile)) {
+		if !ok || (ok && !FilesEqual(f, *aFile, retDiff.Comprehensive)) {
 			notMatchedIndices = append(notMatchedIndices, i)
 		} else {
 			aFilesMap[f.Name] = nil
@@ -121,7 +112,7 @@ func CompareTrees(a, b *FileTree) FileTreeDiff {
 				continue
 			}
 
-			if BasicFilesEqual(b.Files[i], *file) {
+			if FilesEqual(b.Files[i], *file, retDiff.Comprehensive) {
 				exactMatchFoundAt = name
 				continue
 			}
@@ -215,18 +206,14 @@ func CompareTrees(a, b *FileTree) FileTreeDiff {
 
 	}
 
-	ret := FileTreeDiff{
-		NewerPath:        b.BasePath,
-		FilesDiff:        differentFiles,
-		SubTreesDiff:     differentTrees,
-		NewerErr:         b.Err,
-		LastVisitedDiff:  (*b).LastVisited.Sub((*a).LastVisited),
-		TimeTakenDiff:    b.TimeTaken - a.TimeTaken,
-		DepthDiff:        b.Depth,
-		SizeDiff:         b.Size - a.Size,
-		LastModifiedDiff: time.Time{}.Sub(time.Time{}),
-		PriorityDiff:     b.Priority - a.Priority,
-	}
+	retDiff.NewerPath = b.BasePath
+	retDiff.FilesDiff = differentFiles
+	retDiff.SubTreesDiff = differentTrees
+	retDiff.LastVisitedDiff = (*b).LastVisited.Sub((*a).LastVisited)
+	retDiff.TimeTakenDiff = b.TimeTaken - a.TimeTaken
+	retDiff.SizeDiff = b.Size - a.Size
+	retDiff.LastModifiedDiff = time.Time{}.Sub(time.Time{})
+	retDiff.NumFilesTotalDiff = b.NumFilesTotal - a.NumFilesTotal
 
 	alm := time.Time{}
 	blm := time.Time{}
@@ -236,22 +223,26 @@ func CompareTrees(a, b *FileTree) FileTreeDiff {
 	if a.LastModified != nil {
 		alm = *a.LastModified
 	}
-	ret.LastModifiedDiff = (blm).Sub(alm)
+	retDiff.LastModifiedDiff = (blm).Sub(alm)
+	retDiff.DiffCompleted = time.Now()
 
-	return ret
+	return retDiff
 }
 
 func BasicTreesEqual(a, b FileTree) bool {
 	return a.Depth == b.Depth &&
-		a.Err == b.Err &&
 		len(a.Files) == len(b.Files) &&
 		a.LastModified == b.LastModified &&
 		a.Size == b.Size &&
 		len(a.SubTrees) == len(b.SubTrees)
 }
 
-func BasicFilesEqual(a, b File) bool {
-	return a.Err == b.Err && a.Size == b.Size
+func FilesEqual(a, b File, isComprehensive bool) bool {
+	if isComprehensive {
+		return a.Size == b.Size && a.ByteSample == b.ByteSample
+	} else {
+		return a.Size == b.Size
+	}
 }
 
 /*
@@ -259,7 +250,6 @@ func BasicFilesEqual(a, b File) bool {
 */
 func TreesEqual(a, b FileTree) bool {
 	isEqual := a.Depth == b.Depth
-	isEqual = isEqual && (a.Err == b.Err)
 	isEqual = isEqual && (a.LastModified == b.LastModified)
 	// Ignore `Priority`, `LastVisited` and `TimeTaken`, very sensitive
 	isEqual = isEqual && (a.Size == b.Size)
@@ -291,13 +281,10 @@ func filesEqual(a, b []File) bool {
 	NOTE: Not very thorough
 */
 func DiffEqual(a, b FileTreeDiff) bool {
-	return a.DepthDiff == b.DepthDiff &&
-		len(a.FilesDiff) == len(b.FilesDiff) &&
+	return len(a.FilesDiff) == len(b.FilesDiff) &&
 		a.LastModifiedDiff == b.LastModifiedDiff &&
 		a.LastVisitedDiff == b.LastVisitedDiff &&
-		a.NewerErr == b.NewerErr &&
 		a.NewerPath == b.NewerPath &&
-		a.PriorityDiff == b.PriorityDiff &&
 		a.SizeDiff == b.SizeDiff &&
 		len(a.SubTreesDiff) == len(b.SubTreesDiff) &&
 		a.TimeTakenDiff == b.TimeTakenDiff
