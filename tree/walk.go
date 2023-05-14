@@ -1,8 +1,9 @@
 package tree
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"fmt"
-	"math"
 	"os"
 	"time"
 
@@ -13,15 +14,21 @@ var (
 	Here         = time.Local
 	UnixYear2048 = time.Date(2025, 1, 1, 0, 0, 0, 0, Here).Unix()
 	AllTrees     = []FileTree{}
+	ignoredDirs  = []string{"proc", "Fiye"}
+	chosenHash   = SHA256
+	numFiles     = 0
 )
 
-func (tree *FileTree) Walk(depth int, isComprehensive bool) (errsBelow []error, size int64, numFilesR int64, latestModified *time.Time) {
+func Walk(path string, depth int, isComprehensive bool) (tree FileTree, errsBelow []string, size int64, numFilesR int64, latestModified *time.Time) {
+	tree = FileTree{
+		BasePath: path,
+	}
 	tree.Comprehensive = isComprehensive
 
-	ents, err := os.ReadDir(tree.BasePath)
-	tree.Err = []error{}
+	ents, err := os.ReadDir(path)
+	tree.ErrStrings = []string{}
 	if err != nil {
-		tree.Err = append(tree.Err, errorx.Decorate(err, "failed to open `tree.BasePath`"))
+		tree.ErrStrings = append(tree.ErrStrings, errorx.Decorate(err, "failed to open `tree.BasePath`").Error())
 	}
 
 	var (
@@ -33,12 +40,13 @@ func (tree *FileTree) Walk(depth int, isComprehensive bool) (errsBelow []error, 
 		fullPath := fmt.Sprintf("%s/%s", tree.BasePath, e.Name())
 
 		if e.IsDir() {
-			subTree := FileTree{
-				BasePath: fullPath,
+			if contains(ignoredDirs, e.Name()) {
+				continue
 			}
-			err, subSize, subNumFiles, currModified := subTree.Walk(depth+1, isComprehensive)
+
+			subTree, err, subSize, subNumFiles, currModified := Walk(fullPath, depth+1, isComprehensive)
 			if len(err) > 0 {
-				tree.Err = append(tree.Err, err...)
+				tree.ErrStrings = append(tree.ErrStrings, err...)
 			}
 			tree.Size += subSize
 			numFilesInSubtrees += subNumFiles
@@ -48,43 +56,39 @@ func (tree *FileTree) Walk(depth int, isComprehensive bool) (errsBelow []error, 
 		} else if e.Type().IsRegular() {
 			fStat, err := e.Info()
 			nf := File{
-				Err:        err,
-				ByteSample: nil,
+				Err:  "",
+				Hash: nil,
 			}
 			if err != nil {
-				tree.Err = append(tree.Err, errorx.Decorate(err, "failed to stat file"))
+				tree.ErrStrings = append(tree.ErrStrings, errorx.Decorate(err, "failed to stat file").Error())
 			} else {
-				var sample *ByteSample = nil
-
 				if isComprehensive {
+					nf.Hash = &Hash{}
+
 					fTmp, err := os.OpenFile(fullPath, os.O_RDONLY, 0400)
 					if err != nil {
-						tree.Err = append(tree.Err, errorx.Decorate(err, "failed to open file to get `ByteSample` for 'Comprehensive' scan"))
+						tree.ErrStrings = append(tree.ErrStrings, errorx.Decorate(err, "failed to open file to get `Hash` for 'Comprehensive' scan").Error())
 					} else if fStat.Size() > 0 {
-						sample = &ByteSample{
-							MiddleOffset: int64(math.Ceil(float64(fStat.Size()) / 2.0)),
-							Bytes:        make([]byte, 1000),
+						var b bytes.Buffer
+
+						n, err := b.ReadFrom(fTmp)
+						if err != nil {
+							tree.ErrStrings = append(tree.ErrStrings, errorx.Decorate(err, "failed to read WHOLE file").Error())
 						}
 
-						if fStat.Size() <= NumSampleBytes {
-							_, err = fTmp.Read(sample.Bytes)
-							if err != nil {
-								tree.Err = append(tree.Err, errorx.Decorate(err, "failed to read WHOLE file"))
-							}
+						if n <= int64(chosenHash) {
+							nf.Hash.Type = NONE
+							copy(nf.Hash.Bytes[:], b.Bytes())
 						} else {
-							n, err := fTmp.ReadAt(sample.Bytes, sample.MiddleOffset-(NumSampleBytes/2))
-							if err != nil && n < NumSampleBytes { // Should only return the error here if we didn't read enough bytes
-								tree.Err = append(tree.Err, errorx.Decorate(err, "failed to read PARTIAL file"))
-							}
+							nf.Hash.Type = chosenHash
+							nf.Hash.Bytes = generateSHAHash(b.Bytes())
 						}
-					} else {
-						sample = &ByteSample{}
+
 					}
 
 				}
 
 				nf.Name = fStat.Name()
-				nf.ByteSample = sample
 				nf.Size = fStat.Size()
 
 				tree.Size += fStat.Size()
@@ -101,7 +105,7 @@ func (tree *FileTree) Walk(depth int, isComprehensive bool) (errsBelow []error, 
 	tree.LastVisited = time.Now()
 	tree.Depth = depth
 
-	return tree.Err, tree.Size, tree.NumFilesTotal, newestModified
+	return tree, tree.ErrStrings, tree.Size, tree.NumFilesTotal, newestModified
 }
 
 func GetNewestTime(curr *time.Time, new *time.Time) *time.Time {
@@ -126,3 +130,20 @@ func PrintTree(t *FileTree) {
 		PrintTree(&t)
 	}
 }
+
+func contains(arr []string, target string) bool {
+	for _, v := range arr {
+		if v == target {
+			return true
+		}
+	}
+	return false
+}
+
+func generateSHAHash(bs []byte) [sha256.Size]byte {
+	return sha256.Sum256(bs)
+}
+
+// func getNEqualTimeSubtrees(tree FileTree, n, percentDiffAllowed int) []string {
+
+// }
