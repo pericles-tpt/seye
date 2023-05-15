@@ -2,8 +2,6 @@ package diff
 
 import (
 	"time"
-
-	"github.com/Fiye/tree"
 )
 
 /*
@@ -13,19 +11,28 @@ import (
 	whether the `ByteSample` of two files differs (useful for files with equal size
 	but data differs)
 */
-type FileTreeDiff struct {
+type TreeDiff struct {
 	DiffCompleted time.Time
 	Comprehensive bool
 
 	// Non-recursive data
 	NewerPath        string
-	FilesDiff        []tree.File
+	FilesDiff        []FileDiff
+	FilesDiffIndices []int
 	LastVisitedDiff  time.Duration
 	TimeTakenDiff    time.Duration
 	LastModifiedDiff time.Duration
 
 	// Recursive data
-	SubTreesDiff      []FileTreeDiff
-	SizeDiff          int64
-	NumFilesTotalDiff int64
+	SubTreesDiff        []TreeDiff
+	SubTreesDiffIndices []int
+	SizeDiff            int64
+	NumFilesTotalDiff   int64
+}
+
+type FileDiff struct {
+	NewerName        string
+	HashDiff         string
+	SizeDiff         int64
+	LastModifiedDiff time.Duration
 }
