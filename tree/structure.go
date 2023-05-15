@@ -60,10 +60,11 @@ type FileTree struct {
 	scans
 */
 type File struct {
-	Name string
-	Hash *Hash
-	Size int64
-	Err  string
+	Name         string
+	Hash         *Hash
+	Size         int64
+	Err          string
+	LastModified time.Time
 }
 
 type Hash struct {

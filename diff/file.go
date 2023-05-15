@@ -9,7 +9,7 @@ import (
 )
 
 // TODO: Should revisit these, JSON (although easier to read) isn't as efficient as a binary file format (review `gob` library for recursive data structures)
-func WriteBinary(tree FileTreeDiff, path string) error {
+func WriteBinary(tree TreeDiff, path string) error {
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		return errorx.Decorate(err, "failed to opem/create file for writing FileTree data")
@@ -20,8 +20,8 @@ func WriteBinary(tree FileTreeDiff, path string) error {
 	return ge.Encode(tree)
 }
 
-func ReadBinary(path string) (FileTreeDiff, error) {
-	treeDiff := FileTreeDiff{}
+func ReadBinary(path string) (TreeDiff, error) {
+	treeDiff := TreeDiff{}
 	f, err := os.OpenFile(path, os.O_RDONLY, 0400)
 	if err != nil {
 		return treeDiff, errorx.Decorate(err, "failed to open file for readgin FileTree data")
@@ -34,7 +34,7 @@ func ReadBinary(path string) (FileTreeDiff, error) {
 	return treeDiff, err
 }
 
-func WriteJSON(tree FileTreeDiff, path string) error {
+func WriteJSON(tree TreeDiff, path string) error {
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		return errorx.Decorate(err, "failed to opem/create file for writing FileTree data")
@@ -45,8 +45,8 @@ func WriteJSON(tree FileTreeDiff, path string) error {
 	return je.Encode(tree)
 }
 
-func ReadJSON(path string) (FileTreeDiff, error) {
-	treeDiff := FileTreeDiff{}
+func ReadJSON(path string) (TreeDiff, error) {
+	treeDiff := TreeDiff{}
 	f, err := os.OpenFile(path, os.O_RDONLY, 0400)
 	if err != nil {
 		return treeDiff, errorx.Decorate(err, "failed to open file for readgin FileTree data")

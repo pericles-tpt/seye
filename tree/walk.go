@@ -90,6 +90,7 @@ func Walk(path string, depth int, isComprehensive bool) (tree FileTree, errsBelo
 
 				nf.Name = fStat.Name()
 				nf.Size = fStat.Size()
+				nf.LastModified = fStat.ModTime()
 
 				tree.Size += fStat.Size()
 				currModified := fStat.ModTime()
