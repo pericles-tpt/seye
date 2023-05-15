@@ -12,14 +12,14 @@ func CompareTrees(a, b *tree.FileTree) TreeDiff {
 		return TreeDiff{}
 	}
 
+	ret := []TreeDiff{}
 	if a == nil {
-		_, diff := diffTrees([]tree.FileTree{}, []tree.FileTree{*b}, false)
-		return diff[0]
+		_, ret = diffTrees([]tree.FileTree{}, []tree.FileTree{*b}, false)
 	} else if b == nil {
-		_, diff := diffTrees([]tree.FileTree{*a}, []tree.FileTree{}, false)
-		return diff[0]
+		_, ret = diffTrees([]tree.FileTree{*a}, []tree.FileTree{}, false)
+	} else {
+		_, ret = diffTrees([]tree.FileTree{*a}, []tree.FileTree{*b}, (*a).Comprehensive && (*b).Comprehensive)
 	}
 
-	_, diff := diffTrees([]tree.FileTree{*a}, []tree.FileTree{*b}, (*a).Comprehensive && (*b).Comprehensive)
-	return diff[0]
+	return ret[0]
 }

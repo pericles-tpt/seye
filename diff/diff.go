@@ -60,7 +60,7 @@ func diffFiles(a, b []tree.File) ([]int, []FileDiff) {
 		//	- 'unchanged': `continue`, we return an array of indices where there are differences, the indices left out are unchanged
 		//  - 'renamed': add the changed 'Name' to `differentFiles`
 		//	- 'changed': add the changed size?, hashDiff? and lastModifiedDiff to `differentFiles`
-		if fileUnchanged >= 0 { // -> nil so do nothing here
+		if fileUnchanged >= 0 {
 			changesFoundB[fileUnchanged] = struct{}{}
 			continue
 		} else if fileRenamed >= 0 {
@@ -132,6 +132,7 @@ func diffTrees(a, b []tree.FileTree, isComprehensive bool) ([]int, []TreeDiff) {
 		changedATrees = []int{}
 		changesFoundB = map[int]struct{}{}
 
+		// These maps for `changedFiles` between subtrees are for caching to avoid unnecessary diffFiles() calls
 		changedFileIndices = map[int]map[int][]int{}
 		differentFiles     = map[int]map[int][]FileDiff{}
 	)
@@ -159,7 +160,7 @@ func diffTrees(a, b []tree.FileTree, isComprehensive bool) ([]int, []TreeDiff) {
 						changedFileIndices[i] = map[int][]int{}
 						differentFiles[i] = map[int][]FileDiff{}
 					}
-					if changedFileIndices[i][treeChanged] == nil || differentFiles[i][treeChanged] == nil {
+					if changedFileIndices[i][j] == nil || differentFiles[i][j] == nil {
 						changedFileIndices[i][j], differentFiles[i][j] = diffFiles(ta.Files, tb.Files)
 					}
 
@@ -175,7 +176,7 @@ func diffTrees(a, b []tree.FileTree, isComprehensive bool) ([]int, []TreeDiff) {
 						changedFileIndices[i] = map[int][]int{}
 						differentFiles[i] = map[int][]FileDiff{}
 					}
-					if changedFileIndices[i][treeChanged] == nil || differentFiles[i][treeChanged] == nil {
+					if changedFileIndices[i][j] == nil || differentFiles[i][j] == nil {
 						changedFileIndices[i][j], differentFiles[i][j] = diffFiles(ta.Files, tb.Files)
 					}
 

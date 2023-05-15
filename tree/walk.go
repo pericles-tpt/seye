@@ -144,7 +144,3 @@ func contains(arr []string, target string) bool {
 func generateSHAHash(bs []byte) [sha256.Size]byte {
 	return sha256.Sum256(bs)
 }
-
-// func getNEqualTimeSubtrees(tree FileTree, n, percentDiffAllowed int) []string {
-
-// }
