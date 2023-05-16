@@ -1,2 +1,9 @@
 Fiye
 *.gob
+*.tree
+*.diff
+*.log
+*.pid
+
+# Ignore binaries built with `go build -o ./bin/dirt ./cmd/cli && ./bin/dirt` and `go build -o ./bin/daemon ./cmd/daemon && ./bin/daemon`
+bin/ 
