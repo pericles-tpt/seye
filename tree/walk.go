@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
+	"io/fs"
 	"os"
 	"time"
 
@@ -11,15 +12,16 @@ import (
 )
 
 var (
-	Here         = time.Local
-	UnixYear2048 = time.Date(2025, 1, 1, 0, 0, 0, 0, Here).Unix()
-	AllTrees     = []FileTree{}
-	ignoredDirs  = []string{"proc", "Fiye"}
-	chosenHash   = SHA256
-	numFiles     = 0
+	Here              = time.Local
+	UnixYear2048      = time.Date(2025, 1, 1, 0, 0, 0, 0, Here).Unix()
+	AllTrees          = []FileTree{}
+	ignoredDirs       = []string{"proc", "Fiye"}
+	chosenHash        = SHA256
+	numFiles          = 0
+	largestFilesLimit = 100
 )
 
-func Walk(path string, depth int, isComprehensive bool) (tree FileTree, errsBelow []string, size int64, numFilesR int64, latestModified *time.Time) {
+func Walk(path string, depth int, isComprehensive bool, largestFiles *[]LargeFile) (tree FileTree, errsBelow []string, size int64, numFilesR int64, latestModified *time.Time) {
 	tree = FileTree{
 		BasePath: path,
 	}
@@ -44,7 +46,7 @@ func Walk(path string, depth int, isComprehensive bool) (tree FileTree, errsBelo
 				continue
 			}
 
-			subTree, err, subSize, subNumFiles, currModified := Walk(fullPath, depth+1, isComprehensive)
+			subTree, err, subSize, subNumFiles, currModified := Walk(fullPath, depth+1, isComprehensive, largestFiles)
 			if len(err) > 0 {
 				tree.ErrStrings = append(tree.ErrStrings, err...)
 			}
@@ -83,9 +85,11 @@ func Walk(path string, depth int, isComprehensive bool) (tree FileTree, errsBelo
 							nf.Hash.Type = chosenHash
 							nf.Hash.Bytes = generateSHAHash(b.Bytes())
 						}
-
 					}
+				}
 
+				if largestFiles != nil {
+					updateLargestFiles(largestFiles, fullPath, fStat)
 				}
 
 				nf.Name = fStat.Name()
@@ -144,3 +148,81 @@ func contains(arr []string, target string) bool {
 func generateSHAHash(bs []byte) [sha256.Size]byte {
 	return sha256.Sum256(bs)
 }
+
+func updateLargestFiles(largestFiles *[]LargeFile, filePath string, fInfo fs.FileInfo) {
+	// Start from the bottom find the first place to insert it (if we can)
+	var (
+		thisSize         = fInfo.Size()
+		smallerFileIndex = -1
+		largerFileIndex  = -1
+	)
+
+	if len((*largestFiles)) == 0 {
+		*largestFiles = append(*largestFiles, LargeFile{FullName: filePath, Size: fInfo.Size()})
+		return
+	}
+
+	for i, _ := range *largestFiles {
+		currIndex := len(*largestFiles) - 1 - i
+		if currIndex < 0 {
+			break
+		}
+		currFile := (*largestFiles)[currIndex]
+
+		if thisSize > currFile.Size {
+			smallerFileIndex = currIndex
+		} else if thisSize <= currFile.Size {
+			largerFileIndex = currIndex
+		}
+
+		if largerFileIndex > -1 {
+			if smallerFileIndex == -1 {
+				if len((*largestFiles)) < largestFilesLimit {
+					// Append to the end (new smallest file)
+					newLargeFile := LargeFile{
+						FullName: filePath,
+						Size:     fInfo.Size(),
+					}
+
+					(*largestFiles) = append((*largestFiles), newLargeFile)
+				}
+				break
+			} else {
+				// Insert between two items
+				// shiftDownAfter(largestFiles, smallerFileIndex)
+
+				(*largestFiles)[smallerFileIndex] = LargeFile{
+					FullName: filePath,
+					Size:     fInfo.Size(),
+				}
+
+				break
+			}
+		} else if smallerFileIndex > -1 && currIndex == 0 {
+			// Prepend to the start
+			newLargestFiles := []LargeFile{
+				{
+					FullName: filePath,
+					Size:     fInfo.Size(),
+				},
+			}
+
+			(*largestFiles) = append(newLargestFiles, (*largestFiles)...)
+
+			if len((*largestFiles)) > largestFilesLimit {
+				*largestFiles = (*largestFiles)[:largestFilesLimit-1]
+			}
+			break
+		}
+	}
+}
+
+// TODO: This is broken, should be using it...
+// func shiftDownAfter(largestFiles *[]LargeFile, shiftDownAfterIndex int) {
+// 	for i, _ := range *largestFiles {
+// 		if i >= (shiftDownAfterIndex) {
+// 			tmp := (*largestFiles)[i]
+// 			(*largestFiles)[i+1] = tmp
+// 		}
+// 	}
+// }

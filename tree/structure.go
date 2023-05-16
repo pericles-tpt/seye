@@ -71,3 +71,8 @@ type Hash struct {
 	Type  HashType
 	Bytes [sha256.Size]byte
 }
+
+type LargeFile struct {
+	FullName string
+	Size     int64
+}
