@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/joomcode/errorx"
@@ -40,6 +41,9 @@ func Walk(path string, depth int, isComprehensive bool, largestFiles *[]LargeFil
 	)
 	for _, e := range ents {
 		fullPath := fmt.Sprintf("%s/%s", tree.BasePath, e.Name())
+		if strings.HasSuffix(tree.BasePath, "/") {
+			fullPath = fmt.Sprintf("%s%s", tree.BasePath, e.Name())
+		}
 
 		if e.IsDir() {
 			if contains(ignoredDirs, e.Name()) {
