@@ -29,7 +29,7 @@ func ReadBinary(path string) (FileTree, error) {
 	defer f.Close()
 
 	gd := gob.NewDecoder(f)
-	err = gd.Decode(tree)
+	err = gd.Decode(&tree)
 
 	return tree, err
 }
