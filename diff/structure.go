@@ -2,6 +2,8 @@ package diff
 
 import (
 	"time"
+
+	"github.com/Fiye/tree"
 )
 
 /*
@@ -17,6 +19,8 @@ type TreeDiff struct {
 
 	// Non-recursive data
 	NewerPath        string
+	DepthDiff        int
+	ErrStringsDiff   []string
 	FilesDiff        []FileDiff
 	FilesDiffIndices []int
 	LastVisitedDiff  time.Duration
@@ -32,7 +36,8 @@ type TreeDiff struct {
 
 type FileDiff struct {
 	NewerName        string
-	HashDiff         string
+	NewerErr         string
+	HashDiff         *tree.Hash
 	SizeDiff         int64
 	LastModifiedDiff time.Duration
 }

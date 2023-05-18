@@ -2,7 +2,6 @@ package diff
 
 import (
 	"bytes"
-	"errors"
 	"time"
 
 	"github.com/Fiye/tree"
@@ -35,17 +34,27 @@ func diffFiles(a, b []tree.File) ([]int, []FileDiff) {
 				fileUnchanged = j
 
 				// If hashes are available compare them too
-				hashDiff, err := diffHash(fa.Hash, fb.Hash)
-				if err != nil && !bytes.Equal(hashDiff, make([]byte, len(hashDiff))) {
-					fileUnchanged = -1
+				hashDiff := diffHash(fa.Hash, fb.Hash)
+
+				if !(fa.Hash == nil && fb.Hash == nil) {
+					if (fa.Hash != nil && fb.Hash == nil) || (fa.Hash == nil && fb.Hash != nil) ||
+						((*fa.Hash).Type != (*fa.Hash).Type) ||
+						!bytes.Equal((*hashDiff).Bytes[:], make([]byte, len((*hashDiff).Bytes))) {
+						fileUnchanged = -1
+					}
 				}
 			} else if !nameSame && sizeSame && modSame {
 				fileRenamed = j
 
 				// If hashes are available compare them too
-				hashDiff, err := diffHash(fa.Hash, fb.Hash)
-				if err != nil && !bytes.Equal(hashDiff, make([]byte, len(hashDiff))) {
-					fileRenamed = -1
+				hashDiff := diffHash(fa.Hash, fb.Hash)
+
+				if !(fa.Hash == nil && fb.Hash == nil) {
+					if (fa.Hash != nil && fb.Hash == nil) || (fa.Hash == nil && fb.Hash != nil) ||
+						((*fa.Hash).Type != (*fa.Hash).Type) ||
+						!bytes.Equal((*hashDiff).Bytes[:], make([]byte, len((*hashDiff).Bytes))) {
+						fileRenamed = -1
+					}
 				}
 			} else if nameSame && !modSame {
 				fileChanged = j
@@ -66,38 +75,35 @@ func diffFiles(a, b []tree.File) ([]int, []FileDiff) {
 		} else if fileRenamed >= 0 {
 			differentFiles = append(differentFiles, FileDiff{
 				NewerName: b[fileRenamed].Name,
+				HashDiff:  b[fileRenamed].Hash,
 			})
+
+			if b[fileRenamed].Hash != nil {
+				differentFiles[len(differentFiles)-1].HashDiff.Bytes = [32]byte{}
+			}
 
 			changesFoundB[fileRenamed] = struct{}{}
 		} else if fileChanged >= 0 {
 			newer := b[fileChanged]
 			older := fa
 
-			hd := ""
-			bd, err := diffHash(older.Hash, newer.Hash)
-			if err != nil {
-				hd = string(bd)
-			}
-
+			// Can't serialise nil... empty value could -> same OR both nil...
 			differentFiles = append(differentFiles, FileDiff{
 				NewerName:        newer.Name,
 				SizeDiff:         newer.Size - older.Size,
-				HashDiff:         hd,
+				NewerErr:         newer.Err,
+				HashDiff:         diffHash(older.Hash, newer.Hash),
 				LastModifiedDiff: newer.LastModified.Sub(older.LastModified),
 			})
 
 			changesFoundB[fileChanged] = struct{}{}
 		} else { // -> file removed
-			hd := ""
-			if fa.Hash != nil {
-				hd = string(fa.Hash.Bytes[:])
-			}
-
 			// -ve time -> file removed, also -ve size (maybe)
 			differentFiles = append(differentFiles, FileDiff{
 				NewerName:        fa.Name,
 				SizeDiff:         -fa.Size,
-				HashDiff:         hd,
+				NewerErr:         fa.Err,
+				HashDiff:         diffHash(fa.Hash, &tree.Hash{Type: fa.Hash.Type}),
 				LastModifiedDiff: time.Time{}.Sub(fa.LastModified),
 			})
 		}
@@ -108,14 +114,10 @@ func diffFiles(a, b []tree.File) ([]int, []FileDiff) {
 	for i, fb := range b {
 		_, ok := changesFoundB[i]
 		if !ok { // Index wasn't matched so add to the end of different files
-			hd := ""
-			if fb.Hash != nil {
-				hd = string(fb.Hash.Bytes[:])
-			}
-
 			differentFiles = append(differentFiles, FileDiff{
 				NewerName:        fb.Name,
-				HashDiff:         hd,
+				NewerErr:         fb.Err,
+				HashDiff:         diffHash(&tree.Hash{Type: fb.Hash.Type}, fb.Hash),
 				SizeDiff:         fb.Size,
 				LastModifiedDiff: fb.LastModified.Sub(time.Time{}),
 			})
@@ -238,6 +240,8 @@ func diffTrees(a, b []tree.FileTree, isComprehensive bool) ([]int, []TreeDiff) {
 				LastVisitedDiff:  newer.LastVisited.Sub(older.LastVisited),
 				TimeTakenDiff:    newer.TimeTaken - older.TimeTaken,
 				LastModifiedDiff: blm.Sub(alm),
+				DepthDiff:        newer.Depth - older.Depth,
+				ErrStringsDiff:   getStringArrayDiff(older.ErrStrings, newer.ErrStrings),
 
 				SubTreesDiff:        stDiff,
 				SubTreesDiffIndices: stDiffIdx,
@@ -266,6 +270,8 @@ func diffTrees(a, b []tree.FileTree, isComprehensive bool) ([]int, []TreeDiff) {
 				LastVisitedDiff:  time.Time{}.Sub(ta.LastVisited),
 				TimeTakenDiff:    -ta.TimeTaken,
 				LastModifiedDiff: time.Time{}.Sub(lm),
+				DepthDiff:        -ta.Depth,
+				ErrStringsDiff:   []string{},
 
 				SubTreesDiff:        stDiff,
 				SubTreesDiffIndices: stDiffIdx,
@@ -298,6 +304,8 @@ func diffTrees(a, b []tree.FileTree, isComprehensive bool) ([]int, []TreeDiff) {
 				LastVisitedDiff:  tb.LastVisited.Sub(time.Time{}),
 				TimeTakenDiff:    tb.TimeTaken,
 				LastModifiedDiff: lm.Sub(time.Time{}),
+				DepthDiff:        tb.Depth,
+				ErrStringsDiff:   tb.ErrStrings,
 
 				SubTreesDiff:        stDiff,
 				SubTreesDiffIndices: stDiffIdx,
@@ -310,22 +318,39 @@ func diffTrees(a, b []tree.FileTree, isComprehensive bool) ([]int, []TreeDiff) {
 	return changedATrees, differentTrees
 }
 
-func diffHash(a, b *tree.Hash) ([]byte, error) {
-	if a == nil || b == nil {
-		return []byte{}, errors.New("can't compare with `a` or `b` as nil")
+func diffHash(a, b *tree.Hash) *tree.Hash {
+	// If hashes are comparable, return their byte difference, otherwise just return `b`
+	if (a != nil && b != nil) && (*a).Type == (*b).Type {
+		for i, aByte := range (*a).Bytes {
+			(*b).Bytes[i] -= aByte
+		}
 	}
-	if (*a).Type != (*b).Type {
-		return []byte{}, errors.New("can't compare `a` and `b` with differing hash types")
+	return b
+}
+
+func getStringArrayDiff(a, b []string) []string {
+	aMap := map[string]int{}
+	for _, s := range a {
+		aMap[s] = -1
 	}
 
-	ret := make([]byte, len((*a).Bytes))
-	if len((*a).Bytes) != len((*b).Bytes) {
-		return ret, errors.New("can't compare unequal length `a` and `b`")
+	for _, s := range b {
+		_, ok := aMap[s]
+		if ok {
+			aMap[s] += 1
+		} else {
+			aMap[s] = 1
+		}
 	}
 
-	for i, aByte := range (*a).Bytes {
-		ret[i] = (*b).Bytes[i] - aByte
+	ret := []string{}
+	for s, n := range aMap {
+		if n > 0 {
+			for i := 0; i < n; i++ {
+				ret = append(ret, s)
+			}
+		}
 	}
 
-	return ret, nil
+	return ret
 }
