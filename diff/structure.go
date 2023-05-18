@@ -32,6 +32,10 @@ type TreeDiff struct {
 	SubTreesDiffIndices []int
 	SizeDiff            int64
 	NumFilesTotalDiff   int64
+
+	// TODO: Try improving Read/Write performance with hashes by having a contiguous AllHash structure
+	// e.g. AllHash, only exists a Depth==0
+	// AllHash *[]byte
 }
 
 type FileDiff struct {
@@ -40,4 +44,10 @@ type FileDiff struct {
 	HashDiff         *tree.Hash
 	SizeDiff         int64
 	LastModifiedDiff time.Duration
+
+	// TODO: To work with AllHash (above), each file should know it's offset in AllHash and its hash length (from enum)
+	// 		 `Hash`, should have type, length and offset.
+	// 			* Type should be NONE, RAW, SHA256.
+	//			* Length should be lookup from enum -> length
+	//		    * Offset, is retrieved from a global offset, then incremented after each new byte section is added
 }
