@@ -1,6 +1,8 @@
 package diff
 
 import (
+	"time"
+
 	"github.com/Fiye/tree"
 )
 
@@ -22,4 +24,23 @@ func CompareTrees(a, b *tree.FileTree) TreeDiff {
 	}
 
 	return ret[0]
+}
+
+func TreeDiffEmpty(d TreeDiff) bool {
+	zeroDuration := time.Time{}.Sub(time.Time{})
+
+	return d.DiffCompleted == time.Time{} &&
+		!d.Comprehensive &&
+		d.NewerPath == "" &&
+		d.DepthDiff == 0 &&
+		d.ErrStringsDiff == nil &&
+		d.FilesDiff == nil &&
+		d.FilesDiffIndices == nil &&
+		d.LastVisitedDiff == zeroDuration &&
+		d.TimeTakenDiff == zeroDuration &&
+		d.LastModifiedDiff == zeroDuration &&
+		d.SubTreesDiff == nil &&
+		d.SubTreesDiffIndices == nil &&
+		d.SizeDiff == 0 &&
+		d.NumFilesTotalDiff == 0
 }
