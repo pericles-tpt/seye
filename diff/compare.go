@@ -1,46 +1,35 @@
 package diff
 
 import (
-	"time"
-
 	"github.com/Fiye/tree"
 )
 
 /*
-	Determine all the differences between two trees and store them in an output tree.FileTree
+	Determine all the differences between two trees and store them in an output Diff
 */
-func CompareTrees(a, b *tree.FileTree) TreeDiff {
+func CompareTrees(a, b *tree.FileTree) DiffMaps {
 	if a == nil && b == nil {
-		return TreeDiff{}
+		return DiffMaps{}
 	}
 
-	ret := []TreeDiff{}
+	ret := DiffMaps{
+		AllHash: []byte{},
+		Trees:   map[string]TreeDiff{},
+		Files:   map[string]FileDiff{},
+	}
 	if a == nil {
-		_, ret = diffTrees([]tree.FileTree{}, []tree.FileTree{*b}, false)
+		_, ret = diffTrees([]tree.FileTree{}, []tree.FileTree{*b}, &([]byte{}), &b.AllHash, false, &ret)
 	} else if b == nil {
-		_, ret = diffTrees([]tree.FileTree{*a}, []tree.FileTree{}, false)
+		_, ret = diffTrees([]tree.FileTree{*a}, []tree.FileTree{}, &a.AllHash, &([]byte{}), false, &ret)
 	} else {
-		_, ret = diffTrees([]tree.FileTree{*a}, []tree.FileTree{*b}, (*a).Comprehensive && (*b).Comprehensive)
+		_, ret = diffTrees([]tree.FileTree{*a}, []tree.FileTree{*b}, &a.AllHash, &b.AllHash, (*a).Comprehensive && (*b).Comprehensive, &ret)
 	}
 
-	return ret[0]
+	return ret
 }
 
-func TreeDiffEmpty(d TreeDiff) bool {
-	zeroDuration := time.Time{}.Sub(time.Time{})
-
-	return d.DiffCompleted == time.Time{} &&
-		!d.Comprehensive &&
-		d.NewerPath == "" &&
-		d.DepthDiff == 0 &&
-		d.ErrStringsDiff == nil &&
-		d.FilesDiff == nil &&
-		d.FilesDiffIndices == nil &&
-		d.LastVisitedDiff == zeroDuration &&
-		d.TimeTakenDiff == zeroDuration &&
-		d.LastModifiedDiff == zeroDuration &&
-		d.SubTreesDiff == nil &&
-		d.SubTreesDiffIndices == nil &&
-		d.SizeDiff == 0 &&
-		d.NumFilesTotalDiff == 0
+func TreeDiffEmpty(d DiffMaps) bool {
+	return len(d.AllHash) == 0 &&
+		len(d.Files) == 0 &&
+		len(d.Trees) == 0
 }
