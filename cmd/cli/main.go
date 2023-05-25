@@ -105,17 +105,19 @@ func getHelpString() string {
 func runScan(path string, numLargestFiles int64) string {
 	timer := time.Now()
 
-	largestFiles := []tree.LargeFile{}
-	_, _, _, _, _ = tree.Walk(path, 0, false, &largestFiles)
+	ws := stats.WalkStats{
+		LargestFiles: &[]stats.LargeFile{},
+	}
+	_ = tree.WalkGenerateTree(path, 0, false, &ws)
 
 	output := fmt.Sprintf("# SHOWING THE TOP %d LARGEST FILES\n", numLargestFiles)
-	for i, f := range largestFiles {
+	for i, f := range *ws.LargestFiles {
 		if i > int(numLargestFiles) {
 			break
 		}
 
 		val := u.NewValue(float64(f.Size), u.Byte)
-		output += fmt.Sprintf("%s %fgb\n", f.FullName, val.MustConvert(u.GigaByte).Float())
+		output += fmt.Sprintf("%s %f %s\n", f.FullName, val.MustConvert(u.MegaByte).Float(), u.MegaByte.Name)
 	}
 
 	return output + fmt.Sprintf("Took: %dms", time.Since(timer).Milliseconds())
