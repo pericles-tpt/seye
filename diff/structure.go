@@ -3,21 +3,25 @@ package diff
 import (
 	"time"
 
-	"github.com/Fiye/tree"
+	"github.com/Fiye/file"
 )
+
+type DiffMaps struct {
+	AllHash []byte // Only populated at depth == 0
+	Trees   map[string]TreeDiff
+	Files   map[string]FileDiff
+}
 
 /*
 	FileTreeDiff: Conveys the change in a `FileTree` at a point in time
-
-	NOTE: For `Comprehensive` scans the diff will also include information about
-	whether the `ByteSample` of two files differs (useful for files with equal size
-	but data differs)
 */
 type TreeDiff struct {
 	DiffCompleted time.Time
 	Comprehensive bool
+	Type          DiffType
 
 	// Non-recursive data
+	OriginalPath     string
 	NewerPath        string
 	DepthDiff        int
 	ErrStringsDiff   []string
@@ -33,21 +37,25 @@ type TreeDiff struct {
 	SizeDiff            int64
 	NumFilesTotalDiff   int64
 
-	// TODO: Try improving Read/Write performance with hashes by having a contiguous AllHash structure
-	// e.g. AllHash, only exists a Depth==0
-	// AllHash *[]byte
+	AllHash       []byte // Only populated at depth == 0
+	AllHashOffset int64
 }
 
 type FileDiff struct {
 	NewerName        string
 	NewerErr         string
-	HashDiff         *tree.Hash
+	Type             DiffType
+	HashDiff         file.HashLocation
 	SizeDiff         int64
 	LastModifiedDiff time.Duration
-
-	// TODO: To work with AllHash (above), each file should know it's offset in AllHash and its hash length (from enum)
-	// 		 `Hash`, should have type, length and offset.
-	// 			* Type should be NONE, RAW, SHA256.
-	//			* Length should be lookup from enum -> length
-	//		    * Offset, is retrieved from a global offset, then incremented after each new byte section is added
 }
+
+type DiffType int64
+
+const (
+	changed DiffType = iota
+	same
+	renamed
+	removed
+	added
+)
