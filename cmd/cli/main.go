@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"github.com/Fiye/diff"
+	"github.com/Fiye/stats"
 	"github.com/Fiye/tree"
 	u "github.com/bcicen/go-units"
 	"github.com/boynton/repl"
-	"github.com/davecgh/go-spew/spew"
 )
 
 type TestHandler struct {
@@ -52,7 +52,6 @@ func (th *TestHandler) Eval(expr string) (string, bool, error) {
 		output := runScan(args[1], numFiles)
 		return output, false, nil
 	case "diffTest":
-		spew.Dump([32]byte{})
 		runDiffTest("/home/pt")
 		return "", false, nil
 	case "readWriteBenchmark":
@@ -124,41 +123,74 @@ func runScan(path string, numLargestFiles int64) string {
 }
 
 func runDiffTest(path string) {
+	os.Remove("./s1_s2.diff")
+	os.Remove("./s2.tree")
+
 	fmt.Println("Started walk 1")
-	s1, _, _, _, _ := tree.Walk(path, 0, true, nil)
+	a := time.Now()
+	s1 := tree.WalkGenerateTree(path, 0, true, nil)
+	fmt.Printf("Took %d ms to generate first tree\n", time.Since(a).Milliseconds())
 	fmt.Printf("Finished walk 1, num files: %d\n", s1.NumFilesTotal)
 
 	fmt.Println("Sleeping for 1 minute...")
-	time.Sleep(1 * time.Minute)
+	time.Sleep(10 * time.Minute)
 
 	fmt.Println("Started walk 2")
-	s2, _, _, _, _ := tree.Walk(path, 0, true, nil)
+	s2 := tree.WalkGenerateTree(path, 0, true, nil)
 	fmt.Printf("Finished walk 2, num files: %d\n", s2.NumFilesTotal)
+	fmt.Printf("The size of the s2Hash is: %d\n", len(s2.AllHash))
 
 	fmt.Println("Started diff")
+	a = time.Now()
 	d := diff.CompareTrees(&s1, &s2)
-	fmt.Printf("Finished diff, diff num files: %d\n", d.NumFilesTotalDiff)
+	fmt.Printf("Took %d ms to generate diff\n", time.Since(a).Milliseconds())
+	fmt.Printf("Finished diff, diff num files: %d\n", len(d.Files))
+	fmt.Printf("The size of the diffHash is: %d\n", len(d.AllHash))
 
-	s1_s2 := diff.WalkAddDiff(s1, d)
-	fmt.Printf("The result of s1 + diff(s1, s2) == s2 is: %v\n", diff.TreeDiffEmpty(diff.CompareTrees(&s1_s2, &s2)))
+	err := d.WriteBinary("./s1_s2.diff")
+	if err != nil {
+		panic(err)
+	}
+
+	s1_s2 := s1.DeepCopy()
+
+	err = s1_s2.WriteBinary("./s2.tree")
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(len(d.Files))
+	fmt.Println(len(d.Trees))
+	a = time.Now()
+	removeTree := diff.WalkAddDiff(&s1_s2, &d, &(s1_s2.AllHash), []diff.TreeDiff{}, []diff.FileDiff{})
+	fmt.Printf("Took %d ms to add diff to tree\n", time.Since(a).Milliseconds())
+	var smth diff.DiffMaps
+	if removeTree {
+		smth = diff.CompareTrees(nil, &s2)
+	}
+	smth = diff.CompareTrees(&s1_s2, &s2)
+	fmt.Println(len(smth.Files))
+	fmt.Println(len(smth.Trees))
+	fmt.Printf("The result of s1 + diff(s1, s2) == s2 is: %v\n", diff.TreeDiffEmpty(smth))
 	fmt.Printf("Num files in the added diff is: %d\n", s1_s2.NumFilesTotal)
 }
 
 func runBinaryReadWriteTest() {
 	os.Remove("./s1.gob")
 
-	path := "/home/pt"
+	path := "/"
 	fmt.Printf("BENCHMARK PERFORMED ON PATH '%s'\n\n", path)
 
 	fmt.Println("READ/WRITE TEST OF 'SHALLOW' SCAN (NO SHA256 HASHES)")
 	fmt.Println("started creating big tree")
-	s1, _, _, _, _ := tree.Walk(path, 0, false, nil)
+	s1 := tree.WalkGenerateTree(path, 0, false, nil)
+	fmt.Printf("AllHash for shallow tree size is: %d\n", len(s1.AllHash))
 	fmt.Printf("walk took: %dms\n\n", s1.TimeTaken.Milliseconds())
 
 	var fileSize int64 = 0
 
 	fmt.Println("doing test write to get size")
-	err := tree.WriteBinary(s1, "./s1.gob")
+	err := s1.WriteBinary("./s1.gob")
 	if err != nil {
 		panic(err)
 	}
@@ -170,7 +202,7 @@ func runBinaryReadWriteTest() {
 
 	fmt.Println("started writing big tree (actual)")
 	timer := time.Now()
-	err = tree.WriteBinary(s1, "./s1.gob")
+	err = s1.WriteBinary("./s1.gob")
 	if err != nil {
 		panic(err)
 	}
@@ -190,11 +222,14 @@ func runBinaryReadWriteTest() {
 
 	fmt.Println("\nREAD/WRITE TEST OF 'FULL' SCAN (INCLUDES SHA256 HASHES)")
 	fmt.Println("started creating big tree")
-	s1, _, _, _, _ = tree.Walk(path, 0, true, nil)
+	s1 = tree.WalkGenerateTree(path, 0, true, nil)
+	fmt.Printf("AllHash for deep tree size is: %d\n", len(s1.AllHash))
 	fmt.Printf("walk took: %dms\n\n", s1.TimeTaken.Milliseconds())
 
+	fmt.Printf("Size in tree is: %d\n", s1.Size)
+
 	fmt.Println("doing test write to get size")
-	err = tree.WriteBinary(s1, "./s1.gob")
+	err = s1.WriteBinary("./s1.gob")
 	if err != nil {
 		panic(err)
 	}
@@ -206,7 +241,7 @@ func runBinaryReadWriteTest() {
 
 	fmt.Println("started writing big tree (actual)")
 	timer = time.Now()
-	err = tree.WriteBinary(s1, "./s1.gob")
+	err = s1.WriteBinary("./s1.gob")
 	if err != nil {
 		panic(err)
 	}
