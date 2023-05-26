@@ -136,13 +136,9 @@ func getFileData(fullPath string, fStat os.FileInfo, isComprehensive bool, tree 
 
 				nf.Hash.HashLength = len(hashedBytes)
 			}
-
 		}
+		defer fTmp.Close()
 	}
-
-	// 260/490 (ish) - 64000
-	// 297/524 - 128000
-	//
 
 	nf.Name = fullPath
 	nf.Size = fStat.Size()
