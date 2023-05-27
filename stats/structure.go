@@ -5,12 +5,11 @@ const (
 )
 
 type WalkStats struct {
-	LargestFiles  *[]LargeFile
-	DuplicateMap  *map[string][]string
-	NumDuplicates int
+	LargestFiles *[]BasicFile
+	DuplicateMap *map[string][]BasicFile
 }
 
-type LargeFile struct {
-	FullName string
-	Size     int64
+type BasicFile struct {
+	Path string
+	Size int64
 }

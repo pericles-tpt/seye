@@ -127,7 +127,7 @@ func getFileData(fullPath string, fStat os.FileInfo, isComprehensive bool, tree 
 				nf.Hash.HashLength = len(hashedBytes)
 
 				if walkStats != nil {
-					walkStats.UpdateDuplicates(hashedBytes[:], fullPath)
+					walkStats.UpdateDuplicates(hashedBytes[:], fStat.Size(), fullPath)
 				}
 
 			}

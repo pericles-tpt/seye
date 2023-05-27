@@ -6,7 +6,7 @@ func (w *WalkStats) UpdateLargestFiles(filePath string, fInfo fs.FileInfo) {
 	if w.LargestFiles == nil {
 		return
 	} else if len(*w.LargestFiles) == 0 {
-		*w.LargestFiles = append(*w.LargestFiles, LargeFile{FullName: filePath, Size: fInfo.Size()})
+		*w.LargestFiles = append(*w.LargestFiles, BasicFile{Path: filePath, Size: fInfo.Size()})
 		return
 	}
 
@@ -34,9 +34,9 @@ func (w *WalkStats) UpdateLargestFiles(filePath string, fInfo fs.FileInfo) {
 			largerFileFound        = largerFileIndex > -1
 			smallerFileFound       = smallerFileIndex > -1
 			withinLargesFilesLimit = len((*w.LargestFiles)) < largestFilesLimit
-			newLargeFile           = LargeFile{
-				FullName: filePath,
-				Size:     fInfo.Size(),
+			newLargeFile           = BasicFile{
+				Path: filePath,
+				Size: fInfo.Size(),
 			}
 		)
 
@@ -48,7 +48,7 @@ func (w *WalkStats) UpdateLargestFiles(filePath string, fInfo fs.FileInfo) {
 			break
 		} else if smallerFileFound && currIndex == 0 {
 			// Prepend to the start
-			newLargestFiles := []LargeFile{newLargeFile}
+			newLargestFiles := []BasicFile{newLargeFile}
 			(*w.LargestFiles) = append(newLargestFiles, (*w.LargestFiles)...)
 			if len((*w.LargestFiles)) > largestFilesLimit {
 				*w.LargestFiles = (*w.LargestFiles)[:largestFilesLimit-1]
@@ -58,16 +58,18 @@ func (w *WalkStats) UpdateLargestFiles(filePath string, fInfo fs.FileInfo) {
 	}
 }
 
-func (w *WalkStats) UpdateDuplicates(fileBytes []byte, filePath string) {
+func (w *WalkStats) UpdateDuplicates(fileHashBytes []byte, fileSize int64, filePath string) {
 	if w.DuplicateMap == nil {
 		return
 	}
 
-	_, ok := (*w.DuplicateMap)[string(fileBytes)]
+	_, ok := (*w.DuplicateMap)[string(fileHashBytes)]
 	if !ok {
-		(*w.DuplicateMap)[string(fileBytes)] = []string{filePath}
+		(*w.DuplicateMap)[string(fileHashBytes)] = []BasicFile{{Path: filePath, Size: fileSize}}
 	} else {
-		(*w.DuplicateMap)[string(fileBytes)] = append((*w.DuplicateMap)[string(fileBytes)], filePath)
-		w.NumDuplicates++
+		(*w.DuplicateMap)[string(fileHashBytes)] = append((*w.DuplicateMap)[string(fileHashBytes)], BasicFile{
+			Path: filePath,
+			Size: fileSize,
+		})
 	}
 }
