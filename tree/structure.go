@@ -7,7 +7,7 @@ import (
 )
 
 /*
-	FileTree: A recursive structure, representing the full filetree structure at a point in time
+A recursive structure, representing the full FileTree structure at a point in time
 */
 type FileTree struct {
 	// Non-recursive data

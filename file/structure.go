@@ -5,13 +5,12 @@ import "time"
 type HashType int
 
 const (
-	NONE HashType = iota
-	SHA256
-	RAW
+	SHA256 HashType = iota
+	// TODO: MD5? Smaller, faster, less secure...
 )
 
 /*
-File: Encapsulates size information for a file in the FS
+Encapsulates size information for a file in the FS
 */
 type File struct {
 	Name         string
