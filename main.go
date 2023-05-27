@@ -104,7 +104,7 @@ func runScan(path string, numLargestFiles int64) string {
 	timer := time.Now()
 
 	ws := stats.WalkStats{
-		LargestFiles: &[]stats.LargeFile{},
+		LargestFiles: &[]stats.BasicFile{},
 	}
 	_ = tree.WalkGenerateTree(path, 0, false, &ws)
 
@@ -115,7 +115,7 @@ func runScan(path string, numLargestFiles int64) string {
 		}
 
 		val := u.NewValue(float64(f.Size), u.Byte)
-		output += fmt.Sprintf("%s %f %s\n", f.FullName, val.MustConvert(u.MegaByte).Float(), u.MegaByte.Name)
+		output += fmt.Sprintf("%s %f %s\n", f.Path, val.MustConvert(u.MegaByte).Float(), u.MegaByte.Name)
 	}
 
 	return output + fmt.Sprintf("Took: %dms", time.Since(timer).Milliseconds())
@@ -131,7 +131,7 @@ func runDiffTest(path string) {
 	fmt.Printf("Took %d ms to generate first tree\n", time.Since(a).Milliseconds())
 	fmt.Printf("Finished walk 1, num files: %d\n", s1.NumFilesTotal)
 
-	numMins := 3
+	numMins := 5
 	fmt.Printf("Sleeping for %d minute(s)...\n", numMins)
 	time.Sleep(time.Duration(numMins) * time.Minute)
 
@@ -164,14 +164,16 @@ func runDiffTest(path string) {
 	a = time.Now()
 	removeTree := diff.WalkAddDiff(&s1_s2, &d, &(s1_s2.AllHash), []diff.TreeDiff{}, []diff.FileDiff{})
 	fmt.Printf("Took %d ms to add diff to tree\n", time.Since(a).Milliseconds())
-	var smth diff.DiffMaps
+	var smth diff.ScanDiff
 	if removeTree {
 		smth = diff.CompareTrees(nil, &s2)
 	}
 	smth = diff.CompareTrees(&s1_s2, &s2)
+	smth1 := diff.CompareTrees(&s1, &s2)
 	fmt.Println(len(smth.Files))
 	fmt.Println(len(smth.Trees))
-	fmt.Printf("The result of s1 + diff(s1, s2) == s2 is: %v\n", diff.TreeDiffEmpty(smth))
+	fmt.Printf("The result of s1 + diff(s1, s2) == s2 is: %v\n", smth.Empty())
+	fmt.Printf("The result of s1 == s2 is: %v\n", smth1.Empty())
 	fmt.Printf("Num files in the added diff is: %d\n", s1_s2.NumFilesTotal)
 }
 
@@ -223,6 +225,7 @@ func runBinaryReadWriteTest() {
 	fmt.Println("\nREAD/WRITE TEST OF 'FULL' SCAN (INCLUDES SHA256 HASHES)")
 	fmt.Println("started creating big tree")
 	s1 = tree.WalkGenerateTree(path, 0, true, nil)
+	fmt.Printf("There are %d files in this tree\n", s1.NumFilesTotal)
 	fmt.Printf("AllHash for deep tree size is: %d\n", len(s1.AllHash))
 	fmt.Printf("walk took: %dms\n\n", s1.TimeTaken.Milliseconds())
 
