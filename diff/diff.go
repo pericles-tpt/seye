@@ -1,7 +1,6 @@
 package diff
 
 import (
-	"bytes"
 	"time"
 
 	"github.com/Fiye/file"
@@ -14,7 +13,7 @@ var (
 	AllHashDiff   []byte
 )
 
-func diffFiles(a, b []file.File, allHashesA, allHashesB *[]byte, diffMap *DiffMaps) ([]int, []FileDiff) {
+func diffFiles(a, b []file.File, allHashesA, allHashesB *[]byte, sDiff *ScanDiff) ([]int, []FileDiff) {
 	var (
 		differentFiles = []FileDiff{}
 
@@ -61,12 +60,12 @@ func diffFiles(a, b []file.File, allHashesA, allHashesB *[]byte, diffMap *DiffMa
 			changesFoundB[fileUnchanged] = struct{}{}
 			continue
 		} else if fileRenamed >= 0 {
-			diffMap.Files[fa.Name] = FileDiff{
+			sDiff.Files[fa.Name] = FileDiff{
 				NewerName: b[fileRenamed].Name,
 				Type:      renamed,
 			}
 
-			differentFiles = append(differentFiles, diffMap.Files[fa.Name])
+			differentFiles = append(differentFiles, sDiff.Files[fa.Name])
 
 			changesFoundB[fileRenamed] = struct{}{}
 		} else if fileChanged >= 0 {
@@ -89,13 +88,13 @@ func diffFiles(a, b []file.File, allHashesA, allHashesB *[]byte, diffMap *DiffMa
 				AllHashDiff = append(AllHashDiff, (*allHashesB)[newer.Hash.HashOffset:newer.Hash.HashOffset+newer.Hash.HashLength]...)
 			}
 
-			diffMap.Files[fa.Name] = fDiff
+			sDiff.Files[fa.Name] = fDiff
 			differentFiles = append(differentFiles, fDiff)
 
 			changesFoundB[fileChanged] = struct{}{}
 		} else { // -> file removed
 			// -ve time -> file removed, also -ve size (maybe)
-			diffMap.Files[fa.Name] = FileDiff{
+			sDiff.Files[fa.Name] = FileDiff{
 				NewerName:        fa.Name,
 				Type:             removed,
 				SizeDiff:         -fa.Size,
@@ -103,7 +102,7 @@ func diffFiles(a, b []file.File, allHashesA, allHashesB *[]byte, diffMap *DiffMa
 				HashDiff:         file.InitialiseHashLocation(nil, &fa.Hash.Type, nil),
 				LastModifiedDiff: time.Time{}.Sub(fa.LastModified),
 			}
-			differentFiles = append(differentFiles, diffMap.Files[fa.Name])
+			differentFiles = append(differentFiles, sDiff.Files[fa.Name])
 		}
 		changedAFiles = append(changedAFiles, i)
 	}
@@ -127,7 +126,7 @@ func diffFiles(a, b []file.File, allHashesA, allHashesB *[]byte, diffMap *DiffMa
 				AllHashDiff = append(AllHashDiff, (*allHashesB)[fb.Hash.HashOffset:fb.Hash.HashOffset+fb.Hash.HashLength]...)
 			}
 
-			diffMap.Files[fb.Name] = fDiff
+			sDiff.Files[fb.Name] = fDiff
 			differentFiles = append(differentFiles, fDiff)
 		}
 	}
@@ -135,7 +134,7 @@ func diffFiles(a, b []file.File, allHashesA, allHashesB *[]byte, diffMap *DiffMa
 	return changedAFiles, differentFiles
 }
 
-func diffTrees(a, b []tree.FileTree, aHashes, bHashes *[]byte, isComprehensive bool, diffMap *DiffMaps) ([]int, DiffMaps) {
+func diffTrees(a, b []tree.FileTree, aHashes, bHashes *[]byte, isComprehensive bool, sDiff *ScanDiff) ([]int, ScanDiff) {
 	// TODO: Review this condition, supposed to reset AllHashDiff
 	if len(a) > 0 && a[0].Depth == 0 {
 		AllHashDiff = []byte{}
@@ -174,7 +173,7 @@ func diffTrees(a, b []tree.FileTree, aHashes, bHashes *[]byte, isComprehensive b
 						differentFiles[i] = map[int][]FileDiff{}
 					}
 					if changedFileIndices[i][j] == nil || differentFiles[i][j] == nil {
-						changedFileIndices[i][j], differentFiles[i][j] = diffFiles(ta.Files, tb.Files, aHashes, bHashes, diffMap)
+						changedFileIndices[i][j], differentFiles[i][j] = diffFiles(ta.Files, tb.Files, aHashes, bHashes, sDiff)
 					}
 
 					if len(differentFiles[i][j]) > 0 {
@@ -190,7 +189,7 @@ func diffTrees(a, b []tree.FileTree, aHashes, bHashes *[]byte, isComprehensive b
 						differentFiles[i] = map[int][]FileDiff{}
 					}
 					if changedFileIndices[i][j] == nil || differentFiles[i][j] == nil {
-						changedFileIndices[i][j], differentFiles[i][j] = diffFiles(ta.Files, tb.Files, aHashes, bHashes, diffMap)
+						changedFileIndices[i][j], differentFiles[i][j] = diffFiles(ta.Files, tb.Files, aHashes, bHashes, sDiff)
 					}
 
 					if len(differentFiles[i][j]) > 0 {
@@ -214,7 +213,7 @@ func diffTrees(a, b []tree.FileTree, aHashes, bHashes *[]byte, isComprehensive b
 			changesFoundB[treeUnchanged] = struct{}{}
 			continue
 		} else if treeRenamed >= 0 {
-			diffMap.Trees[ta.BasePath] = TreeDiff{
+			sDiff.Trees[ta.BasePath] = TreeDiff{
 				NewerPath: b[treeRenamed].BasePath,
 				Type:      renamed,
 			}
@@ -229,9 +228,9 @@ func diffTrees(a, b []tree.FileTree, aHashes, bHashes *[]byte, isComprehensive b
 				differentFiles[i] = map[int][]FileDiff{}
 			}
 			if changedFileIndices[i][treeChanged] == nil || differentFiles[i][treeChanged] == nil {
-				changedFileIndices[i][treeChanged], differentFiles[i][treeChanged] = diffFiles(older.Files, newer.Files, aHashes, bHashes, diffMap)
+				changedFileIndices[i][treeChanged], differentFiles[i][treeChanged] = diffFiles(older.Files, newer.Files, aHashes, bHashes, sDiff)
 			}
-			stDiffIdx, _ := diffTrees(older.SubTrees, newer.SubTrees, aHashes, bHashes, isComprehensive, diffMap)
+			stDiffIdx, _ := diffTrees(older.SubTrees, newer.SubTrees, aHashes, bHashes, isComprehensive, sDiff)
 
 			alm := time.Time{}
 			blm := time.Time{}
@@ -242,7 +241,7 @@ func diffTrees(a, b []tree.FileTree, aHashes, bHashes *[]byte, isComprehensive b
 				blm = newer.LastModified
 			}
 
-			diffMap.Trees[ta.BasePath] = TreeDiff{
+			sDiff.Trees[ta.BasePath] = TreeDiff{
 				DiffCompleted: time.Now(),
 				Comprehensive: newer.Comprehensive,
 				Type:          changed,
@@ -269,7 +268,7 @@ func diffTrees(a, b []tree.FileTree, aHashes, bHashes *[]byte, isComprehensive b
 			}
 
 			// -ve time -> file removed, also -ve size (maybe)
-			diffMap.Trees[ta.BasePath] = TreeDiff{
+			sDiff.Trees[ta.BasePath] = TreeDiff{
 				DiffCompleted: time.Now(),
 				Comprehensive: ta.Comprehensive,
 				Type:          removed,
@@ -297,10 +296,10 @@ func diffTrees(a, b []tree.FileTree, aHashes, bHashes *[]byte, isComprehensive b
 				lm = tb.LastModified
 			}
 
-			stDiffIdx, _ := diffTrees([]tree.FileTree{}, tb.SubTrees, &([]byte{}), bHashes, isComprehensive, diffMap)
-			fDiffIdx, fDiff := diffFiles([]file.File{}, tb.Files, &([]byte{}), bHashes, diffMap)
+			stDiffIdx, _ := diffTrees([]tree.FileTree{}, tb.SubTrees, &([]byte{}), bHashes, isComprehensive, sDiff)
+			fDiffIdx, fDiff := diffFiles([]file.File{}, tb.Files, &([]byte{}), bHashes, sDiff)
 
-			diffMap.Trees[tb.BasePath] = TreeDiff{
+			sDiff.Trees[tb.BasePath] = TreeDiff{
 				DiffCompleted: time.Now(),
 				Comprehensive: tb.Comprehensive,
 				Type:          added,
@@ -322,10 +321,10 @@ func diffTrees(a, b []tree.FileTree, aHashes, bHashes *[]byte, isComprehensive b
 	}
 
 	if (len(a) == 1 && a[0].Depth == 0) && (len(b) == 1 && b[0].Depth == 0) {
-		diffMap.AllHash = AllHashDiff
+		sDiff.AllHash = AllHashDiff
 	}
 
-	return changedATrees, *diffMap
+	return changedATrees, *sDiff
 }
 
 func getStringArrayDiff(a, b []string) []string {
