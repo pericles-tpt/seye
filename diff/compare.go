@@ -31,8 +31,15 @@ func CompareTrees(a, b *tree.FileTree) ScanDiff {
 	return ret
 }
 
-func TreeDiffEmpty(d DiffMaps) bool {
-	return len(d.AllHash) == 0 &&
-		len(d.Files) == 0 &&
-		len(d.Trees) == 0
+func hashesEqual(a, b file.HashLocation, allHashesA, allHashesB *[]byte) bool {
+	if a.HashOffset == -1 && b.HashOffset == -1 {
+		return true
+	} else if a.HashOffset > -1 && b.HashOffset > -1 {
+		bytesA := (*allHashesA)[a.HashOffset : a.HashOffset+a.HashLength]
+		bytesB := (*allHashesB)[b.HashOffset : b.HashOffset+b.HashLength]
+		return (a.Type == b.Type) && bytes.Equal(bytesA, bytesB)
+	}
+
+	// -> one has a hash, the other doesn't -> the file has changed
+	return false
 }

@@ -354,19 +354,3 @@ func getStringArrayDiff(a, b []string) []string {
 
 	return ret
 }
-
-/*
-NOTE: Assumes `HashLocation.HashOffset` is NEVER nil (which should be true)
-*/
-func hashesEqual(a, b file.HashLocation, allHashesA, allHashesB *[]byte) bool {
-	if a.HashOffset == -1 && b.HashOffset == -1 {
-		return true
-	} else if a.HashOffset > -1 && b.HashOffset > -1 {
-		bytesA := (*allHashesA)[a.HashOffset : a.HashOffset+a.HashLength]
-		bytesB := (*allHashesB)[b.HashOffset : b.HashOffset+b.HashLength]
-		return (a.Type == b.Type) && bytes.Equal(bytesA, bytesB)
-	}
-
-	// -> one has a hash, the other doesn't -> the file has changed
-	return false
-}
