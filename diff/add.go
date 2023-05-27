@@ -40,6 +40,10 @@ func WalkAddDiff(t *tree.FileTree, d *DiffMaps, newAllHash *[]byte, addedTrees [
 			nf := file.File{
 				Hash: file.InitialiseHashLocation(nil, nil, nil),
 			}
+			_, diffEmpty := addDiffToFile(&nf, &af, &d.AllHash, newAllHash)
+			if !diffEmpty {
+				t.Files = append(t.Files, nf)
+			}
 			d.Files[af.NewerName] = FileDiff{}
 		}
 	}
@@ -61,7 +65,7 @@ func WalkAddDiff(t *tree.FileTree, d *DiffMaps, newAllHash *[]byte, addedTrees [
 			removeFile := false
 			fDiff, ok := d.Files[f.Name]
 			if ok {
-				removeFile = addDiffToFile(&f, &fDiff, &d.AllHash, newAllHash)
+				removeFile, _ = addDiffToFile(&f, &fDiff, &d.AllHash, newAllHash)
 				d.Files[f.Name] = FileDiff{}
 			}
 
@@ -114,9 +118,9 @@ func addDiffToTree(t *tree.FileTree, d *TreeDiff, newAllHash *[]byte) bool {
 	return false
 }
 
-func addDiffToFile(f *file.File, d *FileDiff, oldAllHash, newAllHash *[]byte) bool {
+func addDiffToFile(f *file.File, d *FileDiff, oldAllHash, newAllHash *[]byte) (removeFile bool, diffEmpty bool) {
 	if isFEmpty(*d) {
-		return false
+		return false, true
 	}
 	switch d.Type {
 	case changed:
@@ -131,10 +135,11 @@ func addDiffToFile(f *file.File, d *FileDiff, oldAllHash, newAllHash *[]byte) bo
 	case renamed:
 		f.Name = d.NewerName
 	case removed:
-		return true
+		return true, false
 	default:
 	}
-	return false
+
+	return false, false
 }
 
 func addNewHash(addFromLocation file.HashLocation, fromAllHash, toAllHash *[]byte) file.HashLocation {
