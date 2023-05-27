@@ -33,33 +33,18 @@ func diffFiles(a, b []file.File, allHashesA, allHashesB *[]byte, diffMap *DiffMa
 		for j, fb := range b {
 			var (
 				nameSame = fa.Name == fb.Name
-				sizeSame = fa.Size == fb.Size
 				modSame  = fa.LastModified == fb.LastModified
+				// This might seem unnecessary, but untrusted users could fake the lastModified time
+				hashesSame = hashesEqual(fa.Hash, fb.Hash, allHashesA, allHashesB)
 			)
 
-			if nameSame && sizeSame && modSame {
-				fileUnchanged = j
-
-				// If hashes are available compare them too
-				if *(fa.Hash.HashOffset) > -1 && *(fb.Hash.HashOffset) > -1 {
-					bytesA := (*allHashesA)[*(fa.Hash.HashOffset) : *(fa.Hash.HashOffset)+fa.Hash.HashLength]
-					bytesB := (*allHashesB)[*(fb.Hash.HashOffset) : *(fb.Hash.HashOffset)+fb.Hash.HashLength]
-					if (fa.Hash.Type != fb.Hash.Type) || !bytes.Equal(bytesA, bytesB) {
-						fileUnchanged = -1
-					}
+			if hashesSame {
+				if !nameSame {
+					fileRenamed = j
+				} else {
+					fileUnchanged = j
 				}
-			} else if !nameSame && sizeSame && modSame {
-				fileRenamed = j
-
-				// If hashes are available compare them too
-				if *(fa.Hash.HashOffset) > -1 && *(fb.Hash.HashOffset) > -1 {
-					bytesA := (*allHashesA)[*(fa.Hash.HashOffset) : *(fa.Hash.HashOffset)+fa.Hash.HashLength]
-					bytesB := (*allHashesB)[*(fb.Hash.HashOffset) : *(fb.Hash.HashOffset)+fb.Hash.HashLength]
-					if (fa.Hash.Type != fb.Hash.Type) || !bytes.Equal(bytesA, bytesB) {
-						fileRenamed = -1
-					}
-				}
-			} else if nameSame && !modSame {
+			} else if !modSame {
 				fileChanged = j
 			}
 
@@ -368,4 +353,20 @@ func getStringArrayDiff(a, b []string) []string {
 	}
 
 	return ret
+}
+
+/*
+NOTE: Assumes `HashLocation.HashOffset` is NEVER nil (which should be true)
+*/
+func hashesEqual(a, b file.HashLocation, allHashesA, allHashesB *[]byte) bool {
+	if a.HashOffset == -1 && b.HashOffset == -1 {
+		return true
+	} else if a.HashOffset > -1 && b.HashOffset > -1 {
+		bytesA := (*allHashesA)[a.HashOffset : a.HashOffset+a.HashLength]
+		bytesB := (*allHashesB)[b.HashOffset : b.HashOffset+b.HashLength]
+		return (a.Type == b.Type) && bytes.Equal(bytesA, bytesB)
+	}
+
+	// -> one has a hash, the other doesn't -> the file has changed
+	return false
 }
