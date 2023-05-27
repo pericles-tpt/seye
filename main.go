@@ -131,8 +131,9 @@ func runDiffTest(path string) {
 	fmt.Printf("Took %d ms to generate first tree\n", time.Since(a).Milliseconds())
 	fmt.Printf("Finished walk 1, num files: %d\n", s1.NumFilesTotal)
 
-	fmt.Println("Sleeping for 1 minute...")
-	time.Sleep(10 * time.Minute)
+	numMins := 3
+	fmt.Printf("Sleeping for %d minute(s)...\n", numMins)
+	time.Sleep(time.Duration(numMins) * time.Minute)
 
 	fmt.Println("Started walk 2")
 	s2 := tree.WalkGenerateTree(path, 0, true, nil)
