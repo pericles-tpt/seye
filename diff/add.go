@@ -12,7 +12,7 @@ Adds a `TreeDiff` onto a `FileTree`, returning the resultant `FileTree`
 
 NOTE: Assumes the `FileTree` and `TreeDiff` have the same root
 */
-func WalkAddDiff(t *tree.FileTree, d *DiffMaps, newAllHash *[]byte, addedTrees []TreeDiff, addedFiles []FileDiff) bool {
+func WalkAddDiff(t *tree.FileTree, d *ScanDiff, newAllHash *[]byte, addedTrees []TreeDiff, addedFiles []FileDiff) bool {
 	// At depth 0, get `addedTrees` and `addedFile` to pass to deeper recursions
 	if t.Depth == 0 {
 		for _, d := range d.Trees {
@@ -90,9 +90,10 @@ func WalkAddDiff(t *tree.FileTree, d *DiffMaps, newAllHash *[]byte, addedTrees [
 }
 
 func addDiffToTree(t *tree.FileTree, d *TreeDiff, newAllHash *[]byte) bool {
-	if isTEmpty(*d) {
+	if d.isEmpty() {
 		return false
 	}
+
 	switch d.Type {
 	case changed:
 		t.Comprehensive = d.Comprehensive
@@ -119,9 +120,10 @@ func addDiffToTree(t *tree.FileTree, d *TreeDiff, newAllHash *[]byte) bool {
 }
 
 func addDiffToFile(f *file.File, d *FileDiff, oldAllHash, newAllHash *[]byte) (removeFile bool, diffEmpty bool) {
-	if isFEmpty(*d) {
+	if d.isEmpty() {
 		return false, true
 	}
+
 	switch d.Type {
 	case changed:
 		f.Name = d.NewerName
@@ -150,36 +152,4 @@ func addNewHash(addFromLocation file.HashLocation, fromAllHash, toAllHash *[]byt
 		HashLength: addFromLocation.HashLength,
 		Type:       addFromLocation.Type,
 	}
-}
-
-func isFEmpty(f FileDiff) bool {
-	empty := FileDiff{}
-	return f.Type == empty.Type &&
-		f.HashDiff == empty.HashDiff &&
-		f.NewerErr == empty.NewerErr &&
-		f.NewerName == empty.NewerName &&
-		f.SizeDiff == empty.SizeDiff &&
-		f.LastModifiedDiff == empty.LastModifiedDiff
-}
-
-func isTEmpty(f TreeDiff) bool {
-	empty := TreeDiff{}
-	return f.Comprehensive == empty.Comprehensive &&
-		len(f.AllHash) == 0 &&
-		f.AllHashOffset == empty.AllHashOffset &&
-		f.DepthDiff == empty.DepthDiff &&
-		f.DiffCompleted == empty.DiffCompleted &&
-		len(f.ErrStringsDiff) == 0 &&
-		len(f.FilesDiff) == 0 &&
-		len(f.FilesDiffIndices) == 0 &&
-		f.LastModifiedDiff == empty.LastModifiedDiff &&
-		f.LastVisitedDiff == empty.LastVisitedDiff &&
-		f.NewerPath == empty.NewerPath &&
-		f.NumFilesTotalDiff == empty.NumFilesTotalDiff &&
-		f.OriginalPath == empty.OriginalPath &&
-		f.SizeDiff == empty.SizeDiff &&
-		len(f.SubTreesDiff) == 0 &&
-		len(f.SubTreesDiffIndices) == 0 &&
-		f.TimeTakenDiff == empty.TimeTakenDiff &&
-		f.Type == empty.Type
 }

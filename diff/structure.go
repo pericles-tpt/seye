@@ -62,6 +62,26 @@ type TreeDiff struct {
 	AllHashOffset int64
 }
 
+func (t *TreeDiff) isEmpty() bool {
+	empty := TreeDiff{}
+	return t.Comprehensive == empty.Comprehensive &&
+		len(t.AllHash) == 0 &&
+		t.AllHashOffset == empty.AllHashOffset &&
+		t.DepthDiff == empty.DepthDiff &&
+		t.DiffCompleted == empty.DiffCompleted &&
+		len(t.ErrStringsDiff) == 0 &&
+		t.LastModifiedDiff == empty.LastModifiedDiff &&
+		t.LastVisitedDiff == empty.LastVisitedDiff &&
+		t.NewerPath == empty.NewerPath &&
+		t.NumFilesTotalDiff == empty.NumFilesTotalDiff &&
+		t.SizeDiff == empty.SizeDiff &&
+		t.TimeTakenDiff == empty.TimeTakenDiff &&
+		t.Type == empty.Type
+}
+
+/*
+Contains the differences between two `File`s
+*/
 type FileDiff struct {
 	NewerName        string
 	NewerErr         string
@@ -71,12 +91,12 @@ type FileDiff struct {
 	LastModifiedDiff time.Duration
 }
 
-type DiffType int64
-
-const (
-	changed DiffType = iota
-	same
-	renamed
-	removed
-	added
-)
+func (f *FileDiff) isEmpty() bool {
+	empty := FileDiff{}
+	return f.Type == empty.Type &&
+		f.HashDiff == empty.HashDiff &&
+		f.NewerErr == empty.NewerErr &&
+		f.NewerName == empty.NewerName &&
+		f.SizeDiff == empty.SizeDiff &&
+		f.LastModifiedDiff == empty.LastModifiedDiff
+}
