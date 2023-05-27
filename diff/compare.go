@@ -1,18 +1,21 @@
 package diff
 
 import (
+	"bytes"
+
+	"github.com/Fiye/file"
 	"github.com/Fiye/tree"
 )
 
 /*
-	Determine all the differences between two trees and store them in an output Diff
+Determine all the differences between two trees and store them in an output Diff
 */
-func CompareTrees(a, b *tree.FileTree) DiffMaps {
+func CompareTrees(a, b *tree.FileTree) ScanDiff {
 	if a == nil && b == nil {
-		return DiffMaps{}
+		return ScanDiff{}
 	}
 
-	ret := DiffMaps{
+	ret := ScanDiff{
 		AllHash: []byte{},
 		Trees:   map[string]TreeDiff{},
 		Files:   map[string]FileDiff{},
