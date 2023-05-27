@@ -74,9 +74,7 @@ func WalkGenerateTree(path string, depth int, isComprehensive bool, walkStats *s
 		} else if e.Type().IsRegular() {
 			fStat, err := e.Info()
 			nf := file.File{
-				Hash: file.HashLocation{
-					HashOffset: &noHashOffset,
-				},
+				Hash: file.InitialiseHashLocation(nil, nil, nil),
 			}
 			if err != nil {
 				tree.ErrStrings = append(tree.ErrStrings, errorx.Decorate(err, "failed to stat file").Error())
@@ -108,9 +106,7 @@ func WalkGenerateTree(path string, depth int, isComprehensive bool, walkStats *s
 
 func getFileData(fullPath string, fStat os.FileInfo, isComprehensive bool, tree *FileTree, walkStats *stats.WalkStats) file.File {
 	nf := file.File{
-		Hash: file.HashLocation{
-			HashOffset: &noHashOffset,
-		},
+		Hash: file.InitialiseHashLocation(nil, nil, nil),
 	}
 
 	if isComprehensive {
@@ -124,17 +120,16 @@ func getFileData(fullPath string, fStat os.FileInfo, isComprehensive bool, tree 
 				(*tree).ErrStrings = append((*tree).ErrStrings, errorx.Decorate(err, "failed to read WHOLE file").Error())
 			} else {
 				newHashOffset := len(AllHashBytes)
-				nf.Hash.Type = file.SHA256
-				nf.Hash.HashOffset = &newHashOffset
 				hashedBytes := h.Sum(nil)
-				// TODO: Change hardcoded `treeThreads` index once we implement multithreading
 				AllHashBytes = append(AllHashBytes, hashedBytes[:]...)
+				nf.Hash.Type = file.SHA256
+				nf.Hash.HashOffset = newHashOffset
+				nf.Hash.HashLength = len(hashedBytes)
 
 				if walkStats != nil {
 					walkStats.UpdateDuplicates(hashedBytes[:], fullPath)
 				}
 
-				nf.Hash.HashLength = len(hashedBytes)
 			}
 		}
 		defer fTmp.Close()

@@ -96,16 +96,12 @@ func diffFiles(a, b []file.File, allHashesA, allHashesB *[]byte, diffMap *DiffMa
 				SizeDiff:         newer.Size - older.Size,
 				NewerErr:         newer.Err,
 				LastModifiedDiff: newer.LastModified.Sub(older.LastModified),
-				HashDiff:         file.HashLocation{HashOffset: &noHashOffset},
+				HashDiff:         file.InitialiseHashLocation(nil, nil, nil),
 			}
 
-			if *(newer.Hash.HashOffset) > -1 {
-				fDiff.HashDiff = file.HashLocation{
-					Type:       newer.Hash.Type,
-					HashOffset: &lastAllHashByte,
-					HashLength: newer.Hash.HashLength,
-				}
-				AllHashDiff = append(AllHashDiff, (*allHashesB)[*(newer.Hash.HashOffset):*(newer.Hash.HashOffset)+newer.Hash.HashLength]...)
+			if newer.Hash.HashOffset > -1 {
+				fDiff.HashDiff = file.InitialiseHashLocation(&lastAllHashByte, &newer.Hash.Type, &newer.Hash.HashLength)
+				AllHashDiff = append(AllHashDiff, (*allHashesB)[newer.Hash.HashOffset:newer.Hash.HashOffset+newer.Hash.HashLength]...)
 			}
 
 			diffMap.Files[fa.Name] = fDiff
@@ -119,7 +115,7 @@ func diffFiles(a, b []file.File, allHashesA, allHashesB *[]byte, diffMap *DiffMa
 				Type:             removed,
 				SizeDiff:         -fa.Size,
 				NewerErr:         fa.Err,
-				HashDiff:         file.HashLocation{Type: fa.Hash.Type, HashOffset: &noHashOffset},
+				HashDiff:         file.InitialiseHashLocation(nil, &fa.Hash.Type, nil),
 				LastModifiedDiff: time.Time{}.Sub(fa.LastModified),
 			}
 			differentFiles = append(differentFiles, diffMap.Files[fa.Name])
@@ -138,16 +134,12 @@ func diffFiles(a, b []file.File, allHashesA, allHashesB *[]byte, diffMap *DiffMa
 				NewerErr:         fb.Err,
 				SizeDiff:         fb.Size,
 				LastModifiedDiff: fb.LastModified.Sub(time.Time{}),
-				HashDiff:         file.HashLocation{HashOffset: &noHashOffset},
+				HashDiff:         file.InitialiseHashLocation(nil, nil, nil),
 			}
 
-			if *(fb.Hash.HashOffset) > -1 {
-				fDiff.HashDiff = file.HashLocation{
-					Type:       fb.Hash.Type,
-					HashOffset: &lastAllHashByte,
-					HashLength: fb.Hash.HashLength,
-				}
-				AllHashDiff = append(AllHashDiff, (*allHashesB)[*(fb.Hash.HashOffset):*(fb.Hash.HashOffset)+fb.Hash.HashLength]...)
+			if fb.Hash.HashOffset > -1 {
+				fDiff.HashDiff = file.InitialiseHashLocation(&lastAllHashByte, &fb.Hash.Type, &fb.Hash.HashLength)
+				AllHashDiff = append(AllHashDiff, (*allHashesB)[fb.Hash.HashOffset:fb.Hash.HashOffset+fb.Hash.HashLength]...)
 			}
 
 			diffMap.Files[fb.Name] = fDiff

@@ -7,14 +7,10 @@ import (
 	"github.com/Fiye/tree"
 )
 
-var (
-	noHashOffset = -1
-)
-
 /*
-	Adds a `TreeDiff` onto a `FileTree`, returning the resultant `FileTree`
+Adds a `TreeDiff` onto a `FileTree`, returning the resultant `FileTree`
 
-	NOTE: Assumes the `FileTree` and `TreeDiff` have the same root
+NOTE: Assumes the `FileTree` and `TreeDiff` have the same root
 */
 func WalkAddDiff(t *tree.FileTree, d *DiffMaps, newAllHash *[]byte, addedTrees []TreeDiff, addedFiles []FileDiff) bool {
 	// At depth 0, get `addedTrees` and `addedFile` to pass to deeper recursions
@@ -41,9 +37,9 @@ func WalkAddDiff(t *tree.FileTree, d *DiffMaps, newAllHash *[]byte, addedTrees [
 	}
 	for _, af := range addedFiles {
 		if t.BasePath == path.Dir(af.NewerName) {
-			nf := file.File{}
-			addDiffToFile(&nf, &af, &d.AllHash, newAllHash)
-			t.Files = append(t.Files, nf)
+			nf := file.File{
+				Hash: file.InitialiseHashLocation(nil, nil, nil),
+			}
 			d.Files[af.NewerName] = FileDiff{}
 		}
 	}
@@ -128,10 +124,8 @@ func addDiffToFile(f *file.File, d *FileDiff, oldAllHash, newAllHash *[]byte) bo
 		f.Err = d.NewerErr
 		f.LastModified = f.LastModified.Add(d.LastModifiedDiff)
 		f.Size += d.SizeDiff
-		f.Hash = file.HashLocation{
-			HashOffset: &noHashOffset,
-		}
-		if (*d.HashDiff.HashOffset) > -1 {
+		f.Hash = file.InitialiseHashLocation(nil, nil, nil)
+		if d.HashDiff.HashOffset > -1 {
 			f.Hash = addNewHash(d.HashDiff, oldAllHash, newAllHash)
 		}
 	case renamed:
@@ -144,11 +138,10 @@ func addDiffToFile(f *file.File, d *FileDiff, oldAllHash, newAllHash *[]byte) bo
 }
 
 func addNewHash(addFromLocation file.HashLocation, fromAllHash, toAllHash *[]byte) file.HashLocation {
-	*toAllHash = append(*toAllHash, (*fromAllHash)[(*addFromLocation.HashOffset):(*addFromLocation.HashOffset)+addFromLocation.HashLength]...)
-
 	newHashOffset := len(*toAllHash) - 1
+	*toAllHash = append(*toAllHash, (*fromAllHash)[addFromLocation.HashOffset:addFromLocation.HashOffset+addFromLocation.HashLength]...)
 	return file.HashLocation{
-		HashOffset: &newHashOffset,
+		HashOffset: newHashOffset,
 		HashLength: addFromLocation.HashLength,
 		Type:       addFromLocation.Type,
 	}
