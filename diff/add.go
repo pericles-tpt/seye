@@ -153,3 +153,14 @@ func addNewHash(addFromLocation file.HashLocation, fromAllHash, toAllHash *[]byt
 		Type:       addFromLocation.Type,
 	}
 }
+
+func addHashAtOffset(offset int, length int, hashType file.HashType, hashBytes []byte, AllHash *[]byte) file.HashLocation {
+	for i := 0; i < length; i++ {
+		(*AllHash)[offset+i] = hashBytes[i]
+	}
+	return file.HashLocation{
+		HashOffset: offset,
+		HashLength: length,
+		Type:       hashType,
+	}
+}
