@@ -39,7 +39,7 @@ func (tree *FileTree) WriteBinary(path string) error {
 }
 
 func ReadBinary(path string) (FileTree, error) {
-	tree := FileTree{}
+	var tree FileTree
 	f, err := os.OpenFile(path, os.O_RDONLY, 0400)
 	if err != nil {
 		return tree, errorx.Decorate(err, "failed to open file for reading FileTree data")

@@ -1,6 +1,10 @@
 package stats
 
-import "io/fs"
+import (
+	"io/fs"
+	"path"
+	"sort"
+)
 
 func (w *WalkStats) UpdateLargestFiles(filePath string, fInfo fs.FileInfo) {
 	if w.LargestFiles == nil {
@@ -73,3 +77,25 @@ func (w *WalkStats) UpdateDuplicates(fileHashBytes []byte, fileSize int64, fileP
 		})
 	}
 }
+
+func (w *WalkStats) GetLargestDuplicates(limit int) [][]BasicFile {
+	var orderedDuplicates [][]BasicFile
+
+	// Remove anything that isn't a duplicate
+	for _, v := range *w.DuplicateMap {
+		if len(v) > 1 {
+			v[0].Path = path.Base(v[0].Path)
+			orderedDuplicates = append(orderedDuplicates, v)
+		}
+	}
+
+	sort.SliceStable(orderedDuplicates[:], func(i, j int) bool {
+		aSize := int64(len(orderedDuplicates[i])) * (orderedDuplicates[i][0].Size)
+		bSize := int64(len(orderedDuplicates[j])) * (orderedDuplicates[j][0].Size)
+		return aSize > bSize
+	})
+
+	return orderedDuplicates
+}
+
+//go build && ./Fiye report /Users/ptelemachou/ -d=10 -l=10
