@@ -1,6 +1,8 @@
 package utility
 
 import (
+	"crypto/md5"
+	"fmt"
 	"time"
 )
 
@@ -18,4 +20,13 @@ func Contains(arr []string, target string) bool {
 		}
 	}
 	return false
+}
+
+func HashFilePath(input string) string {
+	hashed := md5.Sum([]byte(input))
+	legalFileName := ""
+	for _, v := range hashed {
+		legalFileName += fmt.Sprintf("%x", v)
+	}
+	return legalFileName
 }
