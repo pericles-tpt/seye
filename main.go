@@ -3,19 +3,30 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
+	"github.com/Fiye/config"
 	"github.com/Fiye/diff"
+	"github.com/Fiye/scan"
 	"github.com/Fiye/stats"
 	"github.com/Fiye/tree"
 	u "github.com/bcicen/go-units"
-	"github.com/boynton/repl"
+	"github.com/davecgh/go-spew/spew"
+	"github.com/joomcode/errorx"
+	term "github.com/nsf/termbox-go"
 )
 
+var (
+	validCommands = []string{"scan", "report", "changes", "help", "diffTest", "rwBenchmark"}
+)
+
+func main() {
 	// Setup
 	err := config.Load()
 	if err != nil {
@@ -23,14 +34,78 @@ import (
 	}
 	runPreviously := config.GetRunPreviously()
 
-// test incomplete lines by counting parens -- they must match.
-func (th *TestHandler) Eval(expr string) (string, bool, error) {
+	err = scan.Load()
+	if err != nil {
+		log.Fatal("[Fiye] failed to load scans data", err)
+	}
+
+	err = term.Init()
+	if err != nil {
+		log.Fatal("[Fiye] failed to initialise module for reading STDIN", err)
+	}
+	defer term.Close()
+
+	// Commands
+	if len(os.Args) < 2 {
+		log.Fatal("[Fiye] You must provide at least 1 argument to run a command")
+	} else if os.Args[1] == "scan" && len(os.Args) < 3 {
+		log.Fatal("[Fiye] You must provide at least 2 arguments to run the `scan` command")
+	}
+
 	var (
-		err    error
-		args   = strings.Split(expr, " ")
-		cmd    = args[0]
-		params []string
+		command = os.Args[1]
+		params  = os.Args[2:]
 	)
+
+	switch command {
+	case "scan":
+		err = scanDir(params, runPreviously)
+		if err != nil {
+			log.Fatal("[Fiye] failed to run scan", err)
+		}
+	case "report":
+		err = report(params, runPreviously)
+		if err != nil {
+			log.Fatal("[Fiye] failed to run report", err)
+		}
+	case "changes":
+		err = changes(runPreviously)
+		if err != nil {
+			log.Fatal("[Fiye] failed to run changes", err)
+		}
+	case "help":
+		fmt.Print(getHelpString())
+	case "diffTest":
+		runDiffTest("/Users/ptelemachou/Library")
+	case "rwBenchmark":
+		runBinaryReadWriteTest()
+	default:
+		log.Fatal("[Fiye] Invalid argument provided must be one of: ", strings.Join(validCommands, ","))
+	}
+
+	// TODO: Remove this, just to deal with termbox wiping output atm
+	time.Sleep(time.Minute * 1000)
+}
+
+func getHelpString() string {
+	help := `# Available commands #
+* scan [PATH] -c -d: 
+	Runs a manual scan of a directory (storing the resulting tree in a file), additional
+	args are:
+		'-c': run a "comprehensive" scan
+
+* report -l=[NUM_LARGEST_FILES] -d=[NUM_LARGEST_DUPLICATES]: 
+	Reports on the data from the LAST scan. Additional args are:
+		'-l': get the n largest files
+		'-d': get the n largest duplicates
+
+	NOTE: Can only report on duplicates if the last two scans are BOTH comprehensive
+
+* help:
+	Prints out this message
+`
+	return help
+}
 
 	if len(args) > 1 {
 		params = args[1:]
