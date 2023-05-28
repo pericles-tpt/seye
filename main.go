@@ -329,20 +329,38 @@ func changes(runPreviously bool) error {
 	return nil
 }
 
-func (th *TestHandler) Stop(history []string) {
-}
+func promptNewOutputDir() (string, error) {
+	var (
+		newOutputDir   string
+		outputDirValid bool
+	)
 
-func main() {
-	repl.REPL(new(TestHandler))
-}
+	fmt.Printf("Do you want to change your output path for directory scans? Default:\n\t%s\nType a new VALID path to set a different output path OR just press ENTER to use the default", config.GetScansOutputDir())
 
-func getHelpString() string {
-	help := ` Available commands:
-	* scan [PATH] -n=[NUM_LARGEST_FILES]: scans a directory, prints out the n largest files (default 10)
-	* schedule [PATH] [INTERVAL]: schedules a for scanning by the 'dirt' daemon, on interval (e.g. 50m, 6h, etc)
-	* view: view scans for a path, the user will be prompted further to select the PATH and scans to view/compare`
+	for !outputDirValid {
+		newOutputDir = getTermInput()
 
-	return help
+		if newOutputDir == "" {
+			newOutputDir = config.GetScansOutputDir()
+			break
+		} else {
+			_, err := os.ReadDir(newOutputDir)
+			outputDirValid = (err == nil)
+		}
+
+		// 3. If confirmed return
+		if outputDirValid {
+			fmt.Printf("Provided path '%s', is valid. Are you sure you want to use it for storing directory scans? [Y/n]\n", newOutputDir)
+			confirmResp := getTermInput()
+			fmt.Printf("|%s|\n", confirmResp)
+			if len(confirmResp) != 0 && !strings.EqualFold(confirmResp, "y") {
+				break
+			}
+		}
+	}
+
+	return newOutputDir, nil
+
 }
 
 func runScan(path string, numLargestFiles int64) string {
@@ -372,7 +390,7 @@ func runDiffTest(path string) {
 
 	fmt.Println("Started walk 1")
 	a := time.Now()
-	s1 := tree.WalkGenerateTree(path, 0, true, nil)
+	s1 := tree.WalkGenerateTree(path, 0, false, nil)
 	fmt.Printf("Took %d ms to generate first tree\n", time.Since(a).Milliseconds())
 	fmt.Printf("Finished walk 1, num files: %d\n", s1.NumFilesTotal)
 
@@ -381,7 +399,7 @@ func runDiffTest(path string) {
 	time.Sleep(time.Duration(numMins) * time.Minute)
 
 	fmt.Println("Started walk 2")
-	s2 := tree.WalkGenerateTree(path, 0, true, nil)
+	s2 := tree.WalkGenerateTree(path, 0, false, nil)
 	fmt.Printf("Finished walk 2, num files: %d\n", s2.NumFilesTotal)
 	fmt.Printf("The size of the s2Hash is: %d\n", len(s2.AllHash))
 
@@ -413,6 +431,10 @@ func runDiffTest(path string) {
 	if removeTree {
 		smth = diff.CompareTrees(nil, &s2)
 	}
+
+	scan.PrintLargestDiffs(10, d)
+	return
+
 	smth = diff.CompareTrees(&s1_s2, &s2)
 	smth1 := diff.CompareTrees(&s1, &s2)
 	fmt.Println(len(smth.Files))
@@ -506,4 +528,34 @@ func runBinaryReadWriteTest() {
 	fmt.Printf("read took: %dms, at a speed of %.2f %s/s\n", endTimer.Milliseconds(), (units.Float() / (float64(endTimer.Nanoseconds()) / math.Pow(10, 9))), units.Unit().Name)
 	s2.Depth += 1
 	os.Remove("./s1.gob")
+}
+
+func getTermInput() string {
+	buffer := ""
+	exit := false
+	fmt.Print("\n> ")
+
+	// Source: Slightly modified from: https://stackoverflow.com/a/40185912
+	for {
+		if ev := term.PollEvent(); ev.Type == term.EventKey {
+			if ev.Key == term.KeyEnter || ev.Key == term.KeyCtrlD {
+				break
+			} else if ev.Key == term.KeyCtrlC {
+				exit = true
+				break
+				// TODO: Review whether this is enough
+			} else if !unicode.IsControl(ev.Ch) {
+				fmt.Print(string(ev.Ch))
+				buffer += string(ev.Ch)
+			}
+		}
+	}
+
+	if exit {
+		// TODO: Get OS this is running on to get correct Ctrl+C signal (130 linux, 2 on macos)
+		os.Exit(2)
+	}
+
+	fmt.Print("\n")
+	return buffer
 }
