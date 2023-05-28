@@ -17,7 +17,6 @@ import (
 	"github.com/Fiye/stats"
 	"github.com/Fiye/tree"
 	u "github.com/bcicen/go-units"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/joomcode/errorx"
 	term "github.com/nsf/termbox-go"
 )
@@ -158,10 +157,6 @@ func scanDir(args []string, runPreviously bool) error {
 			// 2. Diff with new scan
 			timer = time.Now()
 			diff := diff.CompareTrees(&lastTree, &newTree)
-			spew.Dump(diff)
-			spew.Dump(len(lastTree.AllHash))
-			spew.Dump(len(newTree.AllHash))
-			fmt.Println(len(diff.Files), len(diff.Trees))
 			scan.PrintLargestDiffs(10, diff)
 			fmt.Printf("	Took %d ms to compare this tree with the last one\n", time.Since(timer).Milliseconds())
 
@@ -310,12 +305,12 @@ func changes(runPreviously bool) error {
 	var sdiff diff.ScanDiff
 	records := scan.GetScansFull(availableDiffPaths[selected])
 	if records != nil {
-		first, err := tree.ReadBinary(config.GetScansOutputDir() + scan.GetLastScanFilename(availableDiffPaths[selected], false))
+		first, err := tree.ReadBinary(config.GetScansOutputDir() + scan.GetScanFilename(availableDiffPaths[selected], 0, false))
 		if err != nil {
 			return err
 		}
 
-		last, err := tree.ReadBinary(config.GetScansOutputDir() + scan.GetScanFilename(availableDiffPaths[selected], 0, false))
+		last, err := tree.ReadBinary(config.GetScansOutputDir() + scan.GetLastScanFilename(availableDiffPaths[selected], false))
 		if err != nil {
 			return err
 		}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/Fiye/config"
@@ -197,7 +198,6 @@ func GetScanFilename(rootPath string, index int, isDiff bool) string {
 		path += fmt.Sprintf("%d.diff", index)
 	} else {
 		path += fmt.Sprintf("%d.tree", index)
-		scr.IncrementCurrScanNum(rootPath)
 	}
 	return path
 }
@@ -239,15 +239,38 @@ func PrintLargestDiffs(limit int, sf diff.ScanDiff) {
 		i++
 	}
 
-	sort.SliceStable(diffArray, func(i, j int) bool {
-		return diffArray[i].SizeDiff > diffArray[j].SizeDiff
+	totalSizeIncrease := 0
+	for _, v := range sf.Files {
+		totalSizeIncrease += int(v.SizeDiff)
+	}
+	changeDirection := "increase"
+	if totalSizeIncrease < 0 {
+		changeDirection = "decrease"
+	}
+	fmt.Printf("Observed an overall %d byte %s to files\n\n", totalSizeIncrease, changeDirection)
+
+	// Only keep deepest directories?
+	deepestDirs := []diff.TreeDiff{}
+	for _, v := range diffArray {
+		for _, v2 := range diffArray {
+			if v2.NewerPath != v.NewerPath && strings.HasPrefix(v2.NewerPath, v.NewerPath) {
+				v.SizeDiff -= v2.SizeDiff
+			}
+		}
+		deepestDirs = append(deepestDirs, v)
+	}
+
+	sort.SliceStable(deepestDirs, func(i, j int) bool {
+		return deepestDirs[i].SizeDiff > deepestDirs[j].SizeDiff
 	})
 
-	for i := 0; i < limit && i < len(diffArray); i++ {
-		changeDirection := "increased"
-		if diffArray[i].SizeDiff < 0 {
-			changeDirection = "decreased"
-		}
-		fmt.Printf("'%s' %s by %d bytes\n", diffArray[i].NewerPath, changeDirection, diffArray[i].SizeDiff)
+	fmt.Println("Biggest disk usage INCREASED")
+	for i := 0; i < limit && i < len(deepestDirs); i++ {
+		fmt.Printf("'%s' +%d bytes\n", deepestDirs[i].NewerPath, deepestDirs[i].SizeDiff)
+	}
+
+	fmt.Println("\nBiggest disk usage DECREASES")
+	for i := 0; i < limit && i < len(deepestDirs); i++ {
+		fmt.Printf("'%s' %d bytes\n", deepestDirs[len(deepestDirs)-1-i].NewerPath, deepestDirs[len(deepestDirs)-1-i].SizeDiff)
 	}
 }
