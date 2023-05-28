@@ -188,24 +188,81 @@ func scanDir(args []string, runPreviously bool) error {
 	return nil
 }
 
-		output := runScan(args[1], numFiles)
-		return output, false, nil
-	case "diffTest":
-		runDiffTest("/home/pt")
-		return "", false, nil
-	case "readWriteBenchmark":
-		runBinaryReadWriteTest()
-		return "", false, nil
-	case "schedule":
-		return "unimplemented", true, nil
-	case "view":
-		return "unimplemented", true, nil
-	case "help":
-		return getHelpString(), false, nil
-	default:
-		return "command not recognised", true, nil
+func report(args []string, runPreviously bool) error {
+	// Check dir is readable
+	targetDir := args[0]
+	_, err := os.ReadDir(targetDir)
+	if err != nil {
+		return err
 	}
+
+	// Always does COMPREHENSIVE atm
+	// TODO: Change this so we can read existing diffs to get data
+	var (
+		ws                     = stats.WalkStats{}
+		isComprehensive        = false
+		reportLargest    int64 = -1
+		reportDuplicates int64 = -1
+	)
+	for _, v := range args {
+		if strings.HasPrefix(v, "-l=") {
+			parts := strings.Split(v, "=")
+			reportLargest, err = strconv.ParseInt(parts[1], 10, 64)
+			if err != nil {
+				panic(err)
+			}
+			fileList := make([]stats.BasicFile, reportLargest)
+			ws.LargestFiles = &fileList
+		} else if strings.HasPrefix(v, "-d=") {
+			parts := strings.Split(v, "=")
+			reportDuplicates, err = strconv.ParseInt(parts[1], 10, 64)
+			if err != nil {
+				panic(err)
+			}
+			isComprehensive = true
+			fileMap := make(map[string][]stats.BasicFile, reportDuplicates)
+			ws.DuplicateMap = &fileMap
+		}
+	}
+
+	// Walk the tree, write the scan to `ScansRecord` and disk
+	fmt.Printf("Started traversing tree '%s'...\n", targetDir)
+	timer := time.Now()
+	newTree := tree.WalkGenerateTree(targetDir, 0, isComprehensive, &ws)
+	fmt.Printf("	Took %d ms to traverse the tree\n", time.Since(timer).Milliseconds())
+
+	fmt.Printf("REPORT GENERATED FOR TREE WITH ROOT '%s'\n", newTree.BasePath)
+	fmt.Printf("Tree contains: %d files and is of size %d\n\n", newTree.NumFilesTotal, newTree.Size)
+
+	limit := 10
+
+	if ws.LargestFiles != nil {
+		i := 0
+		fmt.Printf("\n## The 10 largest files are: ##\n")
+		for _, v := range *ws.LargestFiles {
+			fmt.Printf("'%s': %d bytes\n", v.Path, v.Size)
+			i++
+			if i >= limit {
+				break
+			}
+		}
+	}
+
+	if ws.DuplicateMap != nil {
+		i := 0
+		fmt.Printf("## The 10 largest duplicates are (other copies' names may differ): ##\n")
+		for _, v := range ws.GetLargestDuplicates(limit) {
+			fmt.Printf("'%s': %d * %d bytes = %d bytes\n", v[0].Path, len(v), v[0].Size, len(v)*int(v[0].Size))
+			i++
+			if i >= limit {
+				break
+			}
+		}
+	}
+
+	return nil
 }
+
 
 func (th *TestHandler) Reset() {
 	th.value = ""
