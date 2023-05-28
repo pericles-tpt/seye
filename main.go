@@ -107,25 +107,86 @@ func getHelpString() string {
 	return help
 }
 
-	if len(args) > 1 {
-		params = args[1:]
+func scanDir(args []string, runPreviously bool) error {
+	// First execution setup
+	if !runPreviously {
+		fmt.Println("Detected first execution of `Fiye`")
+		newOutput, err := promptNewOutputDir()
+		if err != nil {
+			return err
+		}
+		config.SetScansOutputDir(newOutput)
+		config.SetRunPreviously(true)
 	}
 
-	switch cmd {
-	case "scan":
-		if len(params) < 1 {
-			return "", false, errors.New("Not enough arguments in call to `scan`")
+	// Check dir is readable
+	targetDir := args[0]
+	_, err := os.ReadDir(targetDir)
+	if err != nil {
+		return err
+	}
+
+	// Should be comprehensive on: first scan for a dir AND if requested by user
+	previousFullScans := scan.GetScansFull(targetDir)
+	isComprehensive := (previousFullScans == nil || len((*previousFullScans).Records) == 0)
+	if len(args) > 1 {
+		if args[1] == "-c" {
+			isComprehensive = true
+		} else {
+			return errors.New("invalid third argument provided, must be '-c' (fi provided)")
 		}
+	}
 
-		var numFiles int64 = 10
-		if len(params) > 1 && strings.HasPrefix(args[2], "-n") {
-			numFilesString := strings.Split(args[2], "=")[1]
+	// Walk the tree, write the scan to `ScansRecord` and disk
+	fmt.Printf("Started traversing tree '%s'...\n", targetDir)
+	timer := time.Now()
+	newTree := tree.WalkGenerateTree(targetDir, 0, isComprehensive, nil)
+	fmt.Printf("	Took %d ms to traverse the tree\n", time.Since(timer).Milliseconds())
 
-			numFiles, err = strconv.ParseInt(numFilesString, 10, 64)
+	// Diff this scan with the previous full scan (if exists)
+	if previousFullScans != nil && len((*previousFullScans).Records) > 0 {
+		lastScanTime := ((*previousFullScans).Records)[len((*previousFullScans).Records)-1].TimeCompleted
+		fmt.Printf("Detected an existing full scan, performed at: %s, running 'diff'...\n", lastScanTime.String())
+
+		// 1. Read into memory
+		lastTree, err := tree.ReadBinary(config.GetScansOutputDir() + scan.GetLastScanFilename(newTree.BasePath, false))
+
+		fmt.Println(config.GetScansOutputDir() + scan.GetLastScanFilename(newTree.BasePath, false))
+		if err != nil {
+			fmt.Println("WARNING: Failed to read last local scan for 'diff'ing, may be corrupt or inaccessible")
+		} else {
+			// 2. Diff with new scan
+			timer = time.Now()
+			diff := diff.CompareTrees(&lastTree, &newTree)
+			spew.Dump(diff)
+			spew.Dump(len(lastTree.AllHash))
+			spew.Dump(len(newTree.AllHash))
+			fmt.Println(len(diff.Files), len(diff.Trees))
+			scan.PrintLargestDiffs(10, diff)
+			fmt.Printf("	Took %d ms to compare this tree with the last one\n", time.Since(timer).Milliseconds())
+
+			// 3. Add new diff record (writing to disk in the process)
+			err = scan.AddScansDiff(lastTree.BasePath, lastTree.Comprehensive && newTree.Comprehensive, diff)
 			if err != nil {
-				return "", false, err
+				// TODO: Do something with error here
+				scan.RevertScansDiff(lastTree.BasePath, lastTree.Comprehensive && newTree.Comprehensive, diff)
+				fmt.Println("WARNING: Failed to record new diff on disk")
 			}
 		}
+	}
+
+	fmt.Println("Writing tree data to disk...")
+	err = scan.AddScansFull(newTree)
+	if err != nil {
+		// TODO: Do something with error here
+		scan.RevertScansFull(newTree)
+		return errorx.Decorate(err, "failed to add scan information to record and/or local file")
+	}
+
+	fmt.Printf("Completed tree walk for '%s'!\n", newTree.BasePath)
+
+	return nil
+}
 
 		output := runScan(args[1], numFiles)
 		return output, false, nil
