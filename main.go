@@ -263,21 +263,70 @@ func report(args []string, runPreviously bool) error {
 	return nil
 }
 
+func changes(runPreviously bool) error {
+	var err error
+	// 1. Look through scans for all trees with diffs
+	// - Path related to
+	// - Time between last diff and first scan
+	// - Time between last diff and now
+	diffs := scan.GetAllScansDiff()
+	if diffs == nil {
+		return errors.New("no diffs available")
+	}
 
-func (th *TestHandler) Reset() {
-	th.value = ""
-}
+	var (
+		availableDiffPaths = make([]string, len(*diffs))
+		availableDiffInfo  = make([]string, len(*diffs))
+		i                  = 0
+	)
+	for k, v := range *diffs {
+		firstScanTime := scan.GetScansFull(k).Records[0].TimeCompleted
+		lastDiffTime := v.Records[len(v.Records)-1].TimeCompleted
+		availableDiffPaths[i] = k
+		availableDiffInfo[i] = fmt.Sprintf("(%d) '%s', time from first scan to this diff is %s, diff was completed %s ago", i, k, lastDiffTime.Sub(firstScanTime).String(), time.Since(lastDiffTime).String())
+		i++
+	}
 
-func (th *TestHandler) Prompt() string {
-	return "> "
-}
+	// 2. Print out options for user to select (with tree path and difference in time between first and last diff)
+	fmt.Printf("Available diffs are:\n%s\n", strings.Join(availableDiffInfo, "\n"))
+	var selected int64 = -1
+	for selected < 0 || selected >= int64(len(availableDiffPaths)) {
+		uinput := getTermInput()
+		selected, err = strconv.ParseInt(uinput, 10, 64)
+		if err != nil {
+			fmt.Printf("invalid input provided must be a number between 0 and %d (inclusive)\n", len(availableDiffPaths)-1)
+		}
+	}
 
-func (th *TestHandler) Complete(expr string) (string, []string) {
-	return "", []string{}
-}
+	// TODO: Figure out why adding diffs to find out changes isn't working...
+	// 3. When user selects a VALID option, add the diffs together and show the 10 largest changes
+	// fmt.Println(availableDiffPaths[selected])
+	// diffSum, err := scan.AddDiffsForPath(availableDiffPaths[selected], 0, len((*diffs)[availableDiffPaths[selected]].Records)-1)
+	// if err != nil {
+	// 	return errorx.Decorate(err, "failed to add diffs")
+	// }
 
-func (th *TestHandler) Start() []string {
-	return []string{}
+	// TEMPORARY: Ideally we should add existing diffs and NOT do this...
+	var sdiff diff.ScanDiff
+	records := scan.GetScansFull(availableDiffPaths[selected])
+	if records != nil {
+		first, err := tree.ReadBinary(config.GetScansOutputDir() + scan.GetLastScanFilename(availableDiffPaths[selected], false))
+		if err != nil {
+			return err
+		}
+
+		last, err := tree.ReadBinary(config.GetScansOutputDir() + scan.GetScanFilename(availableDiffPaths[selected], 0, false))
+		if err != nil {
+			return err
+		}
+
+		sdiff = diff.CompareTrees(&first, &last)
+	}
+
+	// 4.
+	scan.PrintLargestDiffs(10, sdiff)
+
+	return nil
 }
 
 func (th *TestHandler) Stop(history []string) {
