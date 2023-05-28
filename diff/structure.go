@@ -33,6 +33,29 @@ func (s *ScanDiff) Empty() bool {
 		len(s.Trees) == 0
 }
 
+// TODO: Probably not working
+func (s *ScanDiff) AddDiff(new ScanDiff, thisAllHash *[]byte) {
+	for k, v := range new.Files {
+		existing, ok := s.Files[k]
+		if !ok {
+			s.Files[k] = v
+		} else {
+			existing.addDiff(&v, thisAllHash, &new.AllHash)
+			s.Files[k] = existing
+		}
+	}
+
+	for k, v := range new.Trees {
+		existing, ok := s.Trees[k]
+		if !ok {
+			s.Trees[k] = v
+		} else {
+			existing.addDiff(&v)
+			s.Trees[k] = existing
+		}
+	}
+}
+
 /*
 Contains the differences between two `FileTree`s
 */
@@ -79,6 +102,34 @@ func (t *TreeDiff) isEmpty() bool {
 		t.Type == empty.Type
 }
 
+// TODO: Probably not working
+func (t *TreeDiff) addDiff(new *TreeDiff) {
+	if new.isEmpty() {
+		return
+	}
+
+	switch new.Type {
+	case changed:
+		t.Comprehensive = new.Comprehensive
+		t.NewerPath = new.NewerPath
+		t.DepthDiff += new.DepthDiff
+		t.ErrStringsDiff = append(t.ErrStringsDiff, new.ErrStringsDiff...)
+		t.LastVisitedDiff += new.LastVisitedDiff
+		t.LastModifiedDiff = new.LastModifiedDiff
+		t.SizeDiff += new.SizeDiff
+		t.NumFilesTotalDiff += new.NumFilesTotalDiff
+		t.AllHashOffset = new.AllHashOffset
+		t.SizeDiff += new.SizeDiff
+	case renamed:
+		t.NewerPath = new.NewerPath
+	case removed:
+		t.Type = new.Type
+	default:
+	}
+
+	return
+}
+
 /*
 Contains the differences between two `File`s
 */
@@ -99,4 +150,29 @@ func (f *FileDiff) isEmpty() bool {
 		f.NewerName == empty.NewerName &&
 		f.SizeDiff == empty.SizeDiff &&
 		f.LastModifiedDiff == empty.LastModifiedDiff
+}
+
+// TODO: Probably not working
+func (f *FileDiff) addDiff(new *FileDiff, thisAllHash *[]byte, allHashNew *[]byte) {
+	if new.isEmpty() {
+		return
+	}
+
+	switch new.Type {
+	case changed:
+		f.NewerName = new.NewerName
+		f.NewerErr = new.NewerErr
+		f.LastModifiedDiff = new.LastModifiedDiff
+		f.SizeDiff += new.SizeDiff
+		new.HashDiff = file.InitialiseHashLocation(nil, nil, nil)
+		if new.HashDiff.HashOffset > -1 {
+			// Put the new hash in the old location for `f` in `allHash`
+			f.HashDiff = addHashAtOffset(f.HashDiff.HashOffset, f.HashDiff.HashLength, f.HashDiff.Type, (*allHashNew)[new.HashDiff.HashOffset:new.HashDiff.HashOffset+new.HashDiff.HashLength], thisAllHash)
+		}
+	case renamed:
+		f.NewerName = new.NewerName
+	case removed:
+		f.Type = new.Type
+	default:
+	}
 }
