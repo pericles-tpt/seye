@@ -16,9 +16,12 @@ import (
 	"github.com/boynton/repl"
 )
 
-type TestHandler struct {
-	value string
-}
+	// Setup
+	err := config.Load()
+	if err != nil {
+		log.Fatal("[Fiye] failed to load config", err)
+	}
+	runPreviously := config.GetRunPreviously()
 
 // test incomplete lines by counting parens -- they must match.
 func (th *TestHandler) Eval(expr string) (string, bool, error) {
