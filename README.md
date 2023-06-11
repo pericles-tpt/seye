@@ -1,7 +1,7 @@
 # Seye (abbr. StorageEye)
 `seye` allows you to scan one or more directories to identify current characteristics (largest size, number of files, duplicates, etc) as well as the change in its disk usage over time.
 
-**WARNING**: This program is currently in a prototype state, some of the INTENDED functionality mentioned below may not be working as intended until testing is complete
+**WARNING**: This program is currently in a prototype state, some of the intended functionality mentioned below may not be working as intended until testing is complete
 
 ## Building `seye`
 Binary releases are not available yet to reinforce the prototype state of the code. However you can build the code from source:
