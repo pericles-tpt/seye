@@ -57,7 +57,7 @@ func Scan(args []string, runPreviously bool) error {
 		outDir := config.GetScansOutputDir()
 		_, err = os.Stat(outDir)
 		if os.IsNotExist(err) {
-			err = os.Mkdir(outDir, 0600)
+			err = os.Mkdir(outDir, 0770)
 			if err != nil {
 				return errorx.Decorate(err, "failed to create directory '%s' for adding FileTree scans", outDir)
 			}
@@ -96,7 +96,7 @@ func Scan(args []string, runPreviously bool) error {
 	// Diff this scan with the previous full scan (if one exists)
 	if previousFullScans != nil && len((*previousFullScans).Records) > 0 {
 		lastScanTime := ((*previousFullScans).Records)[len((*previousFullScans).Records)-1].TimeCompleted
-		fmt.Printf("Detected an existing full scan, performed at: %s, running 'diff'... ", lastScanTime.String())
+		fmt.Printf("Detected an existing full scan, performed at: %s, running 'diff'...\n", lastScanTime.String())
 
 		// 1. Read previous scan into memory
 		lastTree, err := tree.ReadBinary(config.GetScansOutputDir() + records.GetLastScanFilename(newTree.BasePath, false))
@@ -236,9 +236,6 @@ func Diff(args []string) error {
 	// Finally print the largest 10 differences
 	// TODO: Allow this parameter to be user specified in the future
 	sdiff := diff.CompareTrees(&first, &last)
-	for _, t := range sdiff.Trees {
-		fmt.Println(t.NewerPath)
-	}
 	diff.PrintLargestDiffs(10, sdiff)
 
 	return nil

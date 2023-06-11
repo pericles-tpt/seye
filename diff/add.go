@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/joomcode/errorx"
 	"github.com/pericles-tpt/seye/config"
 	"github.com/pericles-tpt/seye/tree"
@@ -259,7 +258,6 @@ func addFileTreeInAlphaOrder(existing []tree.FileTree, new tree.FileTree) []tree
 	foundPostion := false
 	for i, t = range existing {
 		cmp := strings.Compare(new.BasePath, t.BasePath)
-		fmt.Printf("Comparing: %s to %s\n", new.BasePath, t.BasePath)
 		if cmp < 0 {
 			foundPostion = true
 			break
@@ -277,15 +275,8 @@ func addFileTreeInAlphaOrder(existing []tree.FileTree, new tree.FileTree) []tree
 		beforeNewElem = existing[:i]
 		afterNewElem  = existingCopy[i:]
 	)
-	spew.Dump("NEW TREE: ", new)
-	spew.Dump("BEFORE: ", beforeNewElem)
-	spew.Dump("AFTER: ", afterNewElem)
-	spew.Dump(i)
-	spew.Dump(len(existing))
 	ret := append(beforeNewElem, []tree.FileTree{new}...)
 	ret = append(ret, afterNewElem...)
-
-	spew.Dump("Final order: ", ret)
 
 	return ret
 }
