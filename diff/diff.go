@@ -1,27 +1,24 @@
 package diff
 
 import (
+	"runtime"
 	"time"
 
-	"github.com/Fiye/file"
 	"github.com/Fiye/tree"
+	"github.com/Fiye/utility"
 )
 
-var (
-	AllHashBytesA []byte
-	AllHashBytesB []byte
-	AllHashDiff   []byte
-)
-
-func diffFiles(a, b []file.File, allHashesA, allHashesB *[]byte, sDiff *ScanDiff) ([]int, []FileDiff) {
+/*
+Find and returns differences (renamed, removed, added or changed) between two File arrays
+*/
+func diffFiles(a, b []tree.File, allHashesA, allHashesB, allHashDiff *[]byte, sDiff *ScanDiff) ([]int, []FileDiff) {
 	var (
 		differentFiles = []FileDiff{}
-
-		changedAFiles = []int{}
-		changesFoundB = map[int]struct{}{}
+		changedAFiles  = []int{}
+		changesFoundB  = map[int]struct{}{}
 	)
 
-	// Iterate through `a` looking for exact matches with `b`, renames or changed files
+	// 1. Iterate through a, then b (for each a). By comparing files in `a` to `b`, classify them as 'unchanged', 'renamed' or 'changed'
 	for i, fa := range a {
 		var (
 			fileUnchanged = -1
@@ -29,12 +26,12 @@ func diffFiles(a, b []file.File, allHashesA, allHashesB *[]byte, sDiff *ScanDiff
 			fileChanged   = -1
 		)
 
+		// 1a. Compare THIS file in `a`, to each file in `b`, try to find one it matches with for the conditions listed in `var`
 		for j, fb := range b {
 			var (
-				nameSame = fa.Name == fb.Name
-				modSame  = fa.LastModified == fb.LastModified
-				// This might seem unnecessary, but untrusted users could fake the lastModified time
-				hashesSame = hashesEqual(fa.Hash, fb.Hash, allHashesA, allHashesB)
+				nameSame   = fa.Name == fb.Name
+				modSame    = time.Time.Equal(fa.LastModified, fb.LastModified)
+				hashesSame = utility.HashesEqual(fa.Hash, fb.Hash, allHashesA, allHashesB)
 			)
 
 			if hashesSame {
@@ -52,10 +49,7 @@ func diffFiles(a, b []file.File, allHashesA, allHashesB *[]byte, sDiff *ScanDiff
 			}
 		}
 
-		// At this point we know the following changes:
-		//	- 'unchanged': `continue`, we return an array of indices where there are differences, the indices left out are unchanged
-		//  - 'renamed': add the changed 'Name' to `differentFiles`
-		//	- 'changed': add the changed size?, hashDiff? and lastModifiedDiff to `differentFiles`
+		// 1b. For THIS file in `a`, we now know IF it has been modified and HOW, add information about this file to `sDiff` IF it's modified
 		if fileUnchanged >= 0 {
 			changesFoundB[fileUnchanged] = struct{}{}
 			continue
@@ -71,59 +65,60 @@ func diffFiles(a, b []file.File, allHashesA, allHashesB *[]byte, sDiff *ScanDiff
 		} else if fileChanged >= 0 {
 			newer := b[fileChanged]
 			older := fa
-			lastAllHashByte := len(AllHashDiff) - 1
+			lastAllHashByte := len(*allHashDiff) - 1
 
-			// Can't serialise nil... empty value could -> same OR both nil...
 			fDiff := FileDiff{
 				Type:             changed,
 				NewerName:        newer.Name,
 				SizeDiff:         newer.Size - older.Size,
 				NewerErr:         newer.Err,
 				LastModifiedDiff: newer.LastModified.Sub(older.LastModified),
-				HashDiff:         file.InitialiseHashLocation(nil, nil, nil),
+				HashDiff:         utility.InitialiseHashLocation(),
 			}
 
 			if newer.Hash.HashOffset > -1 {
-				fDiff.HashDiff = file.InitialiseHashLocation(&lastAllHashByte, &newer.Hash.Type, &newer.Hash.HashLength)
-				AllHashDiff = append(AllHashDiff, (*allHashesB)[newer.Hash.HashOffset:newer.Hash.HashOffset+newer.Hash.HashLength]...)
+				fDiff.HashDiff = utility.HashLocation{Type: newer.Hash.Type, HashOffset: lastAllHashByte, HashLength: newer.Hash.HashLength}
+				*allHashDiff = append(*allHashDiff, (*allHashesB)[newer.Hash.HashOffset:newer.Hash.HashOffset+newer.Hash.HashLength]...)
 			}
 
 			sDiff.Files[fa.Name] = fDiff
 			differentFiles = append(differentFiles, fDiff)
 
 			changesFoundB[fileChanged] = struct{}{}
-		} else { // -> file removed
-			// -ve time -> file removed, also -ve size (maybe)
+		} else { // -> removed
 			sDiff.Files[fa.Name] = FileDiff{
 				NewerName:        fa.Name,
 				Type:             removed,
 				SizeDiff:         -fa.Size,
 				NewerErr:         fa.Err,
-				HashDiff:         file.InitialiseHashLocation(nil, &fa.Hash.Type, nil),
-				LastModifiedDiff: time.Time{}.Sub(fa.LastModified),
+				HashDiff:         utility.InitialiseHashLocation(),
+				LastModifiedDiff: utility.GoSpecialTime.Sub(fa.LastModified),
 			}
 			differentFiles = append(differentFiles, sDiff.Files[fa.Name])
 		}
+
+		// Record the index of this modified file, so we know which files in `a`, have been modified
 		changedAFiles = append(changedAFiles, i)
 	}
 
-	// Iterate through `b` again to find the added files (i.e. not matched with anything in a), put them at the end of `differentFiles`
+	// 2. Loop through `b` again, to find files in `b` but not in `a`, i.e. ADDED files
 	for i, fb := range b {
-		lastAllHashByte := len(AllHashDiff) - 1
+		lastAllHashByte := len(*allHashDiff) - 1
 		_, ok := changesFoundB[i]
-		if !ok { // Index wasn't matched so add to the end of different files
+		// File NOT recorded in `changesFoundB` -> it's an ADDED file
+		if !ok {
 			fDiff := FileDiff{
 				Type:             added,
 				NewerName:        fb.Name,
 				NewerErr:         fb.Err,
 				SizeDiff:         fb.Size,
-				LastModifiedDiff: fb.LastModified.Sub(time.Time{}),
-				HashDiff:         file.InitialiseHashLocation(nil, nil, nil),
+				LastModifiedDiff: fb.LastModified.Sub(utility.GoSpecialTime),
+				HashDiff:         utility.InitialiseHashLocation(),
 			}
 
 			if fb.Hash.HashOffset > -1 {
-				fDiff.HashDiff = file.InitialiseHashLocation(&lastAllHashByte, &fb.Hash.Type, &fb.Hash.HashLength)
-				AllHashDiff = append(AllHashDiff, (*allHashesB)[fb.Hash.HashOffset:fb.Hash.HashOffset+fb.Hash.HashLength]...)
+				fDiff.HashDiff = utility.HashLocation{Type: fb.Hash.Type, HashOffset: lastAllHashByte, HashLength: fb.Hash.HashLength}
+				*allHashDiff = append(*allHashDiff, (*allHashesB)[fb.Hash.HashOffset:fb.Hash.HashOffset+fb.Hash.HashLength]...)
 			}
 
 			sDiff.Files[fb.Name] = fDiff
@@ -134,22 +129,24 @@ func diffFiles(a, b []file.File, allHashesA, allHashesB *[]byte, sDiff *ScanDiff
 	return changedAFiles, differentFiles
 }
 
-func diffTrees(a, b []tree.FileTree, aHashes, bHashes *[]byte, isComprehensive bool, sDiff *ScanDiff) ([]int, ScanDiff) {
-	// TODO: Review this condition, supposed to reset AllHashDiff
-	if len(a) > 0 && a[0].Depth == 0 {
-		AllHashDiff = []byte{}
+/*
+Find and returns differences (renamed, removed, added or changed) between two FileTree arrays
+*/
+func diffTrees(a, b []tree.FileTree, aHashes, bHashes, allHashDiff *[]byte, isComprehensive bool, sDiff *ScanDiff) ([]int, ScanDiff) {
+	if (len(a) > 0 && a[0].Depth == 0) || allHashDiff == nil {
+		allHashDiff = &[]byte{}
 	}
 
 	var (
 		changedATrees = []int{}
 		changesFoundB = map[int]struct{}{}
 
-		// These maps for `changedFiles` between subtrees are for caching to avoid unnecessary diffFiles() calls
+		// Performing `diffFiles` between two subtrees is expensive, so we cache the comparison results here, to avoid unnecessary calls
 		changedFileIndices = map[int]map[int][]int{}
-		differentFiles     = map[int]map[int][]FileDiff{}
+		changedFiles       = map[int]map[int][]FileDiff{}
 	)
 
-	// Iterate through `a` looking for exact matches with `b`, renames or changed files
+	// 1. Iterate through a, then b (for each a). By comparing `FileTree`s in `a` to `b`, classify them as 'unchanged', 'renamed' or 'changed'
 	for i, ta := range a {
 		var (
 			treeUnchanged = -1
@@ -157,46 +154,49 @@ func diffTrees(a, b []tree.FileTree, aHashes, bHashes *[]byte, isComprehensive b
 			treeChanged   = -1
 		)
 
+		// 1a. Compare THIS FileTree in `a`, to each FileTree in `b`, try to find one it matches with for the conditions listed in `var`
 		for j, tb := range b {
 			var (
 				nameSame = ta.BasePath == tb.BasePath
-				sizeSame = ta.Size == tb.Size
-				modSame  = ta.LastModified == tb.LastModified
+				sizeSame = ta.SizeDirect == tb.SizeDirect
+				modSame  = time.Time.Equal(ta.LastModifiedDirect, tb.LastModifiedDirect)
 			)
 
 			if nameSame && sizeSame && modSame {
 				treeUnchanged = j
 
-				if isComprehensive {
-					if changedFileIndices[i] == nil || differentFiles[i] == nil {
-						changedFileIndices[i] = map[int][]int{}
-						differentFiles[i] = map[int][]FileDiff{}
-					}
-					if changedFileIndices[i][j] == nil || differentFiles[i][j] == nil {
-						changedFileIndices[i][j], differentFiles[i][j] = diffFiles(ta.Files, tb.Files, aHashes, bHashes, sDiff)
-					}
+				if changedFileIndices[i] == nil || changedFiles[i] == nil {
+					changedFileIndices[i] = map[int][]int{}
+					changedFiles[i] = map[int][]FileDiff{}
+				}
+				if changedFileIndices[i][j] == nil || changedFiles[i][j] == nil {
+					changedFileIndices[i][j], changedFiles[i][j] = diffFiles(ta.Files, tb.Files, aHashes, bHashes, allHashDiff, sDiff)
+				}
 
-					if len(differentFiles[i][j]) > 0 {
-						treeUnchanged = -1
-					}
+				if len(changedFiles[i][j]) > 0 {
+					treeUnchanged = -1
+					treeChanged = j
+					break
 				}
 			} else if !nameSame && sizeSame && modSame {
 				treeRenamed = j
 
-				if isComprehensive {
-					if changedFileIndices[i] == nil || differentFiles[i] == nil {
-						changedFileIndices[i] = map[int][]int{}
-						differentFiles[i] = map[int][]FileDiff{}
-					}
-					if changedFileIndices[i][j] == nil || differentFiles[i][j] == nil {
-						changedFileIndices[i][j], differentFiles[i][j] = diffFiles(ta.Files, tb.Files, aHashes, bHashes, sDiff)
-					}
-
-					if len(differentFiles[i][j]) > 0 {
-						treeRenamed = -1
-					}
+				if changedFileIndices[i] == nil || changedFiles[i] == nil {
+					changedFileIndices[i] = map[int][]int{}
+					changedFiles[i] = map[int][]FileDiff{}
 				}
-			} else if nameSame && !modSame {
+				if changedFileIndices[i][j] == nil || changedFiles[i][j] == nil {
+					changedFileIndices[i][j], changedFiles[i][j] = diffFiles(ta.Files, tb.Files, aHashes, bHashes, allHashDiff, sDiff)
+				}
+
+				if len(changedFiles[i][j]) > 0 {
+					treeRenamed = -1
+					treeChanged = j
+					break
+				}
+				// TODO: For some reason, when adding a file to a directory, that "shifts" the position of other files/directory down, the
+				// LastModified time seems to be changed on MacOS, idk why this happens, needs further investigation
+			} else if nameSame && ((runtime.GOOS == "darwin" && !sizeSame) || (runtime.GOOS != "darwin" && !modSame)) {
 				treeChanged = j
 			}
 
@@ -205,12 +205,12 @@ func diffTrees(a, b []tree.FileTree, aHashes, bHashes *[]byte, isComprehensive b
 			}
 		}
 
-		// At this point we know the following changes:
-		//	- 'unchanged': `continue`, we return an array of indices where there are differences, the indices left out are unchanged
-		//  - 'renamed': add the changed 'Name' to `differentFiles`
-		//	- 'changed': add the changed size?, hashDiff? and lastModifiedDiff to `differentFiles`
+		// 1b. For THIS FileTree in `a`, we now know IF it has been modified and HOW, add information about this file to `sDiff` IF it's modified
 		if treeUnchanged >= 0 { // -> nil so do nothing here
 			changesFoundB[treeUnchanged] = struct{}{}
+
+			// 1bi. At the moment we do not know if a change has occured below this tree, so we need to diff the trees below it to check for changes
+			_, _ = diffTrees(ta.SubTrees, b[treeUnchanged].SubTrees, aHashes, bHashes, allHashDiff, isComprehensive, sDiff)
 			continue
 		} else if treeRenamed >= 0 {
 			sDiff.Trees[ta.BasePath] = TreeDiff{
@@ -223,22 +223,22 @@ func diffTrees(a, b []tree.FileTree, aHashes, bHashes *[]byte, isComprehensive b
 			newer := b[treeChanged]
 			older := ta
 
-			if changedFileIndices[i] == nil || differentFiles[i] == nil {
+			if changedFileIndices[i] == nil || changedFiles[i] == nil {
 				changedFileIndices[i] = map[int][]int{}
-				differentFiles[i] = map[int][]FileDiff{}
+				changedFiles[i] = map[int][]FileDiff{}
 			}
-			if changedFileIndices[i][treeChanged] == nil || differentFiles[i][treeChanged] == nil {
-				changedFileIndices[i][treeChanged], differentFiles[i][treeChanged] = diffFiles(older.Files, newer.Files, aHashes, bHashes, sDiff)
+			if changedFileIndices[i][treeChanged] == nil || changedFiles[i][treeChanged] == nil {
+				changedFileIndices[i][treeChanged], changedFiles[i][treeChanged] = diffFiles(older.Files, newer.Files, aHashes, bHashes, allHashDiff, sDiff)
 			}
-			stDiffIdx, _ := diffTrees(older.SubTrees, newer.SubTrees, aHashes, bHashes, isComprehensive, sDiff)
+			stDiffIdx, _ := diffTrees(older.SubTrees, newer.SubTrees, aHashes, bHashes, allHashDiff, isComprehensive, sDiff)
 
-			alm := time.Time{}
-			blm := time.Time{}
-			if (older.LastModified != time.Time{}) {
-				alm = older.LastModified
+			alm := utility.GoSpecialTime
+			blm := utility.GoSpecialTime
+			if older.LastModifiedDirect != utility.GoSpecialTime {
+				alm = older.LastModifiedDirect
 			}
-			if (newer.LastModified != time.Time{}) {
-				blm = newer.LastModified
+			if newer.LastModifiedDirect != utility.GoSpecialTime {
+				blm = newer.LastModifiedDirect
 			}
 
 			sDiff.Trees[ta.BasePath] = TreeDiff{
@@ -246,110 +246,85 @@ func diffTrees(a, b []tree.FileTree, aHashes, bHashes *[]byte, isComprehensive b
 				Comprehensive: newer.Comprehensive,
 				Type:          changed,
 
-				NewerPath:        newer.BasePath,
-				FilesDiff:        differentFiles[i][treeChanged],
-				FilesDiffIndices: changedFileIndices[i][treeChanged],
-				LastVisitedDiff:  newer.LastVisited.Sub(older.LastVisited),
-				TimeTakenDiff:    newer.TimeTaken - older.TimeTaken,
-				LastModifiedDiff: blm.Sub(alm),
-				DepthDiff:        newer.Depth - older.Depth,
-				ErrStringsDiff:   getStringArrayDiff(older.ErrStrings, newer.ErrStrings),
+				NewerPath:              newer.BasePath,
+				FilesDiff:              changedFiles[i][treeChanged],
+				FilesDiffIndices:       changedFileIndices[i][treeChanged],
+				LastVisitedDiff:        newer.LastVisited.Sub(older.LastVisited),
+				TimeTakenDiff:          newer.TimeTaken - older.TimeTaken,
+				LastModifiedDiffDirect: blm.Sub(alm),
+				DepthDiff:              newer.Depth - older.Depth,
+				ErrStringsDiff:         utility.AdditionalStringsInB(older.ErrStrings, newer.ErrStrings),
 
-				SubTreesDiffIndices: stDiffIdx,
-				SizeDiff:            newer.Size - older.Size,
-				NumFilesTotalDiff:   newer.NumFilesTotal - older.NumFilesTotal,
+				SubTreesDiffIndices:     stDiffIdx,
+				SizeDiffDirect:          newer.SizeDirect - older.SizeDirect,
+				NumFilesTotalDiffDirect: newer.NumFilesDirect - older.NumFilesDirect,
 			}
 
 			changesFoundB[treeChanged] = struct{}{}
 		} else { // -> tree removed
-			lm := time.Time{}
-			if (ta.LastModified != time.Time{}) {
-				lm = ta.LastModified
+			lm := utility.GoSpecialTime
+			if ta.LastModifiedDirect != utility.GoSpecialTime {
+				lm = ta.LastModifiedDirect
 			}
 
-			// -ve time -> file removed, also -ve size (maybe)
 			sDiff.Trees[ta.BasePath] = TreeDiff{
 				DiffCompleted: time.Now(),
 				Comprehensive: ta.Comprehensive,
 				Type:          removed,
 
-				NewerPath:        ta.BasePath,
-				LastVisitedDiff:  time.Time{}.Sub(ta.LastVisited),
-				TimeTakenDiff:    -ta.TimeTaken,
-				LastModifiedDiff: time.Time{}.Sub(lm),
-				DepthDiff:        -ta.Depth,
-				ErrStringsDiff:   []string{},
+				NewerPath:              ta.BasePath,
+				LastVisitedDiff:        utility.GoSpecialTime.Sub(ta.LastVisited),
+				TimeTakenDiff:          -ta.TimeTaken,
+				LastModifiedDiffDirect: utility.GoSpecialTime.Sub(lm),
+				DepthDiff:              -ta.Depth,
+				ErrStringsDiff:         []string{},
 
-				SizeDiff:          -ta.Size,
-				NumFilesTotalDiff: -ta.NumFilesTotal,
+				SizeDiffDirect:          -ta.SizeDirect,
+				NumFilesTotalDiffDirect: -ta.NumFilesDirect,
 			}
 		}
+
+		// Record the index of this modified FileTree, so we know which files in `a`, have been modified
 		changedATrees = append(changedATrees, i)
 	}
 
-	// Iterate through `b` again to find the added trees (i.e. not matched with anything in a), put them at the end of `differentFiles`
+	// 2. Loop through `b` again, to find files in `b` but not in `a`, i.e. ADDED FileTrees
 	for i, tb := range b {
 		_, ok := changesFoundB[i]
-		if !ok { // Index wasn't matched so add to the end of different files
-			lm := time.Time{}
-			if (tb.LastModified != time.Time{}) {
-				lm = tb.LastModified
+		// File NOT recorded in `changesFoundB` -> it's an ADDED FileTree
+		if !ok {
+			lm := utility.GoSpecialTime
+			if tb.LastModifiedDirect != utility.GoSpecialTime {
+				lm = tb.LastModifiedDirect
 			}
 
-			stDiffIdx, _ := diffTrees([]tree.FileTree{}, tb.SubTrees, &([]byte{}), bHashes, isComprehensive, sDiff)
-			fDiffIdx, fDiff := diffFiles([]file.File{}, tb.Files, &([]byte{}), bHashes, sDiff)
+			stDiffIdx, _ := diffTrees([]tree.FileTree{}, tb.SubTrees, &([]byte{}), bHashes, allHashDiff, isComprehensive, sDiff)
+			fDiffIdx, fDiff := diffFiles([]tree.File{}, tb.Files, &([]byte{}), bHashes, allHashDiff, sDiff)
 
 			sDiff.Trees[tb.BasePath] = TreeDiff{
 				DiffCompleted: time.Now(),
 				Comprehensive: tb.Comprehensive,
 				Type:          added,
 
-				NewerPath:        tb.BasePath,
-				FilesDiff:        fDiff,
-				FilesDiffIndices: fDiffIdx,
-				LastVisitedDiff:  tb.LastVisited.Sub(time.Time{}),
-				TimeTakenDiff:    tb.TimeTaken,
-				LastModifiedDiff: lm.Sub(time.Time{}),
-				DepthDiff:        tb.Depth,
-				ErrStringsDiff:   tb.ErrStrings,
+				NewerPath:              tb.BasePath,
+				FilesDiff:              fDiff,
+				FilesDiffIndices:       fDiffIdx,
+				LastVisitedDiff:        tb.LastVisited.Sub(utility.GoSpecialTime),
+				TimeTakenDiff:          tb.TimeTaken,
+				LastModifiedDiffDirect: lm.Sub(utility.GoSpecialTime),
+				DepthDiff:              tb.Depth,
+				ErrStringsDiff:         tb.ErrStrings,
 
-				SubTreesDiffIndices: stDiffIdx,
-				SizeDiff:            tb.Size,
-				NumFilesTotalDiff:   tb.NumFilesTotal,
+				SubTreesDiffIndices:     stDiffIdx,
+				SizeDiffDirect:          tb.SizeDirect,
+				NumFilesTotalDiffDirect: tb.NumFilesDirect,
 			}
 		}
 	}
 
 	if (len(a) == 1 && a[0].Depth == 0) && (len(b) == 1 && b[0].Depth == 0) {
-		sDiff.AllHash = AllHashDiff
+		sDiff.AllHash = *allHashDiff
 	}
 
 	return changedATrees, *sDiff
-}
-
-func getStringArrayDiff(a, b []string) []string {
-	aMap := map[string]int{}
-	for _, s := range a {
-		aMap[s] = -1
-	}
-
-	for _, s := range b {
-		_, ok := aMap[s]
-		if ok {
-			aMap[s] += 1
-		} else {
-			aMap[s] = 1
-		}
-	}
-
-	ret := []string{}
-	for s, n := range aMap {
-		if n > 0 {
-			for i := 0; i < n; i++ {
-				ret = append(ret, s)
-			}
-		}
-	}
-
-	return ret
 }
