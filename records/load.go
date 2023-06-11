@@ -1,4 +1,4 @@
-package scan
+package records
 
 import (
 	"encoding/json"
@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	scr       *ScansRecord
-	scansPath = "./scans.json"
+	recs      *AllRecords
+	scansPath = "./records.json"
 )
 
 func Load() error {
@@ -30,9 +30,9 @@ func Load() error {
 
 	if st.Size() > 0 {
 		jd := json.NewDecoder(f)
-		return jd.Decode(&scr)
+		return jd.Decode(&recs)
 	} else {
-		scr = &ScansRecord{
+		recs = &AllRecords{
 			Scans: map[string]ScanRecords{},
 			Diffs: map[string]DiffRecords{},
 		}
@@ -41,12 +41,12 @@ func Load() error {
 	return nil
 }
 
-func (s *ScansRecord) Flush() error {
+func (s *AllRecords) Flush() error {
 	f, err := os.OpenFile(scansPath, os.O_TRUNC|os.O_WRONLY, 0600)
 	if err != nil {
 		return errorx.Decorate(err, "unable to open file '%s' for 'flush'", scansPath)
 	}
 
 	je := json.NewEncoder(f)
-	return je.Encode(*scr)
+	return je.Encode(*recs)
 }

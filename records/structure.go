@@ -1,8 +1,8 @@
-package scan
+package records
 
 import "time"
 
-type ScansRecord struct {
+type AllRecords struct {
 	Scans map[string]ScanRecords `json:"scans"`
 	Diffs map[string]DiffRecords `json:"diffs"`
 }
