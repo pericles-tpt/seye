@@ -60,5 +60,5 @@ The amount of disk space used by `seye`, is dependent on a number of factors inc
 - Correct classification of 'added', 'changed', 'renamed' and 'removed' changes
 - Support for outputting data to files (text, csv, etc)
 
-## Acknowledgement
+## Acknowledgements
 - [@anthonyklepac](https://github.com/anthonyklepac) for his contributions to ideation and protoyping for an [earlier version of this program](https://github.com/pericles-tpt/StorageEye)
