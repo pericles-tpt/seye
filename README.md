@@ -3,6 +3,12 @@
 
 **WARNING**: This program is currently in a prototype state, some of the INTENDED functionality mentioned below may not be working as intended until testing is complete
 
+## Building `StorageEye`
+Binary releases are not available yet to reinforce the prototype state of the code. However you can build the code from source:
+1. Install `go`, by following these instructions: https://go.dev/doc/install
+2. Clone this repo
+2. In the root directory of this repo run `go build -o seye`, to generate a binary called `seye` that you can run from your terminal
+
 ## Information Gathered by Fiye
 "Shallow" scans allow you to:
 - get the largest files in a directory
