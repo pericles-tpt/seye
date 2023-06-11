@@ -4,8 +4,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/Fiye/tree"
-	"github.com/Fiye/utility"
+	"github.com/pericles-tpt/seye/tree"
+	"github.com/pericles-tpt/seye/utility"
 )
 
 /*

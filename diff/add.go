@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Fiye/config"
-	"github.com/Fiye/tree"
-	"github.com/Fiye/utility"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/joomcode/errorx"
+	"github.com/pericles-tpt/seye/config"
+	"github.com/pericles-tpt/seye/tree"
+	"github.com/pericles-tpt/seye/utility"
 )
 
 /*

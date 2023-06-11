@@ -1,7 +1,7 @@
 package diff
 
 import (
-	"github.com/Fiye/tree"
+	"github.com/pericles-tpt/seye/tree"
 )
 
 /*

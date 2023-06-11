@@ -4,10 +4,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Fiye/diff"
-	"github.com/Fiye/tree"
-	"github.com/Fiye/utility"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/pericles-tpt/seye/diff"
+	"github.com/pericles-tpt/seye/tree"
+	"github.com/pericles-tpt/seye/utility"
 )
 
 /*
@@ -60,37 +60,37 @@ func TestDiffAddFileStart(t *testing.T) {
 		expDiff = diff.ScanDiff{
 			AllHash: []byte{},
 			Trees: map[string]diff.TreeDiff{
-				"/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir": {
-					DiffCompleted: d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir"].DiffCompleted,
+				"/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir": {
+					DiffCompleted: d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir"].DiffCompleted,
 					Comprehensive: false,
-					NewerPath:     "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir",
+					NewerPath:     "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir",
 					FilesDiff: []diff.FileDiff{
 						diff.FileDiff{
-							NewerName: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/0",
+							NewerName: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/0",
 							Type:      4,
 							HashDiff: utility.HashLocation{
 								HashOffset: -1,
 							},
 							SizeDiff:         4,
-							LastModifiedDiff: d.Files["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/0"].LastModifiedDiff,
+							LastModifiedDiff: d.Files["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/0"].LastModifiedDiff,
 						},
 					},
-					LastVisitedDiff:         d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir"].LastVisitedDiff,
-					TimeTakenDiff:           d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir"].TimeTakenDiff,
-					LastModifiedDiffDirect:  d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir"].LastModifiedDiffDirect,
+					LastVisitedDiff:         d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir"].LastVisitedDiff,
+					TimeTakenDiff:           d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir"].TimeTakenDiff,
+					LastModifiedDiffDirect:  d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir"].LastModifiedDiffDirect,
 					SizeDiffDirect:          4,
 					NumFilesTotalDiffDirect: 1,
 				},
 			},
 			Files: map[string]diff.FileDiff{
-				"/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/0": {
-					NewerName: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/0",
+				"/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/0": {
+					NewerName: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/0",
 					Type:      4,
 					HashDiff: utility.HashLocation{
 						HashOffset: -1,
 					},
 					SizeDiff:         4,
-					LastModifiedDiff: d.Files["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/0"].LastModifiedDiff,
+					LastModifiedDiff: d.Files["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/0"].LastModifiedDiff,
 				},
 			},
 		}
@@ -123,37 +123,37 @@ func TestDiffAddFileEnd(t *testing.T) {
 		expDiff = diff.ScanDiff{
 			AllHash: []byte{},
 			Trees: map[string]diff.TreeDiff{
-				"/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir": {
-					DiffCompleted: d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir"].DiffCompleted,
+				"/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir": {
+					DiffCompleted: d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir"].DiffCompleted,
 					Comprehensive: false,
-					NewerPath:     "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir",
+					NewerPath:     "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir",
 					FilesDiff: []diff.FileDiff{
 						diff.FileDiff{
-							NewerName: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/D1",
+							NewerName: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/D1",
 							Type:      4,
 							HashDiff: utility.HashLocation{
 								HashOffset: -1,
 							},
 							SizeDiff:         4,
-							LastModifiedDiff: d.Files["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/D1"].LastModifiedDiff,
+							LastModifiedDiff: d.Files["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/D1"].LastModifiedDiff,
 						},
 					},
-					LastVisitedDiff:         d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir"].LastVisitedDiff,
-					TimeTakenDiff:           d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir"].TimeTakenDiff,
-					LastModifiedDiffDirect:  d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir"].LastModifiedDiffDirect,
+					LastVisitedDiff:         d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir"].LastVisitedDiff,
+					TimeTakenDiff:           d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir"].TimeTakenDiff,
+					LastModifiedDiffDirect:  d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir"].LastModifiedDiffDirect,
 					SizeDiffDirect:          4,
 					NumFilesTotalDiffDirect: 1,
 				},
 			},
 			Files: map[string]diff.FileDiff{
-				"/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/D1": {
-					NewerName: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/D1",
+				"/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/D1": {
+					NewerName: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/D1",
 					Type:      4,
 					HashDiff: utility.HashLocation{
 						HashOffset: -1,
 					},
 					SizeDiff:         4,
-					LastModifiedDiff: d.Files["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/D1"].LastModifiedDiff,
+					LastModifiedDiff: d.Files["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/D1"].LastModifiedDiff,
 				},
 			},
 		}
@@ -186,37 +186,37 @@ func TestDiffAddFileMiddleRoot(t *testing.T) {
 		expDiff = diff.ScanDiff{
 			AllHash: []byte{},
 			Trees: map[string]diff.TreeDiff{
-				"/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir": {
-					DiffCompleted: d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir"].DiffCompleted,
+				"/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir": {
+					DiffCompleted: d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir"].DiffCompleted,
 					Comprehensive: false,
-					NewerPath:     "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir",
+					NewerPath:     "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir",
 					FilesDiff: []diff.FileDiff{
 						diff.FileDiff{
-							NewerName: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/B12",
+							NewerName: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/B12",
 							Type:      4,
 							HashDiff: utility.HashLocation{
 								HashOffset: -1,
 							},
 							SizeDiff:         4,
-							LastModifiedDiff: d.Files["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/B12"].LastModifiedDiff,
+							LastModifiedDiff: d.Files["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/B12"].LastModifiedDiff,
 						},
 					},
-					LastVisitedDiff:         d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir"].LastVisitedDiff,
-					TimeTakenDiff:           d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir"].TimeTakenDiff,
-					LastModifiedDiffDirect:  d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir"].LastModifiedDiffDirect,
+					LastVisitedDiff:         d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir"].LastVisitedDiff,
+					TimeTakenDiff:           d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir"].TimeTakenDiff,
+					LastModifiedDiffDirect:  d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir"].LastModifiedDiffDirect,
 					SizeDiffDirect:          4,
 					NumFilesTotalDiffDirect: 1,
 				},
 			},
 			Files: map[string]diff.FileDiff{
-				"/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/B12": {
-					NewerName: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/B12",
+				"/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/B12": {
+					NewerName: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/B12",
 					Type:      4,
 					HashDiff: utility.HashLocation{
 						HashOffset: -1,
 					},
 					SizeDiff:         4,
-					LastModifiedDiff: d.Files["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/B12"].LastModifiedDiff,
+					LastModifiedDiff: d.Files["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/B12"].LastModifiedDiff,
 				},
 			},
 		}
@@ -249,37 +249,37 @@ func TestDiffAddFileMiddleDeeper(t *testing.T) {
 		expDiff = diff.ScanDiff{
 			AllHash: []byte{},
 			Trees: map[string]diff.TreeDiff{
-				"/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/A": {
-					DiffCompleted: d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/A"].DiffCompleted,
+				"/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/A": {
+					DiffCompleted: d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/A"].DiffCompleted,
 					Comprehensive: false,
-					NewerPath:     "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/A",
+					NewerPath:     "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/A",
 					FilesDiff: []diff.FileDiff{
 						{
-							NewerName: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/A/B1",
+							NewerName: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/A/B1",
 							Type:      4,
 							HashDiff: utility.HashLocation{
 								HashOffset: -1,
 							},
 							SizeDiff:         4,
-							LastModifiedDiff: d.Files["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/A/B1"].LastModifiedDiff,
+							LastModifiedDiff: d.Files["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/A/B1"].LastModifiedDiff,
 						},
 					},
-					LastVisitedDiff:         d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/A"].LastVisitedDiff,
-					TimeTakenDiff:           d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/A"].TimeTakenDiff,
-					LastModifiedDiffDirect:  d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/A"].LastModifiedDiffDirect,
+					LastVisitedDiff:         d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/A"].LastVisitedDiff,
+					TimeTakenDiff:           d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/A"].TimeTakenDiff,
+					LastModifiedDiffDirect:  d.Trees["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/A"].LastModifiedDiffDirect,
 					SizeDiffDirect:          4,
 					NumFilesTotalDiffDirect: 1,
 				},
 			},
 			Files: map[string]diff.FileDiff{
-				"/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/A/B1": {
-					NewerName: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/A/B1",
+				"/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/A/B1": {
+					NewerName: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/A/B1",
 					Type:      4,
 					HashDiff: utility.HashLocation{
 						HashOffset: -1,
 					},
 					SizeDiff:         4,
-					LastModifiedDiff: d.Files["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/A/B1"].LastModifiedDiff,
+					LastModifiedDiff: d.Files["/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/A/B1"].LastModifiedDiff,
 				},
 			},
 		}

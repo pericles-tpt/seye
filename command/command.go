@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Fiye/config"
-	"github.com/Fiye/diff"
-	"github.com/Fiye/records"
-	"github.com/Fiye/stats"
-	"github.com/Fiye/tree"
 	"github.com/joomcode/errorx"
+	"github.com/pericles-tpt/seye/config"
+	"github.com/pericles-tpt/seye/diff"
+	"github.com/pericles-tpt/seye/records"
+	"github.com/pericles-tpt/seye/stats"
+	"github.com/pericles-tpt/seye/tree"
 )
 
 func Help() {

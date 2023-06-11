@@ -5,9 +5,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Fiye/command"
-	"github.com/Fiye/config"
-	"github.com/Fiye/records"
+	"github.com/pericles-tpt/seye/command"
+	"github.com/pericles-tpt/seye/config"
+	"github.com/pericles-tpt/seye/records"
 )
 
 var (

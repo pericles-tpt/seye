@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Fiye/utility"
+	"github.com/pericles-tpt/seye/utility"
 )
 
 /*

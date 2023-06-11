@@ -4,9 +4,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/Fiye/stats"
-	"github.com/Fiye/utility"
 	"github.com/joomcode/errorx"
+	"github.com/pericles-tpt/seye/stats"
+	"github.com/pericles-tpt/seye/utility"
 )
 
 type ReadLocation struct {

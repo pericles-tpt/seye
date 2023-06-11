@@ -3,7 +3,7 @@ package records
 import (
 	"fmt"
 
-	"github.com/Fiye/utility"
+	"github.com/pericles-tpt/seye/utility"
 )
 
 func GetScansFull(path string) *ScanRecords {

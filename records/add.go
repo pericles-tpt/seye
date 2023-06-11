@@ -4,10 +4,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/Fiye/config"
-	"github.com/Fiye/diff"
-	"github.com/Fiye/tree"
 	"github.com/joomcode/errorx"
+	"github.com/pericles-tpt/seye/config"
+	"github.com/pericles-tpt/seye/diff"
+	"github.com/pericles-tpt/seye/tree"
 )
 
 /*

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Fiye/utility"
+	"github.com/pericles-tpt/seye/utility"
 )
 
 type BubbleUpProps struct {

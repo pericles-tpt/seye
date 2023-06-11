@@ -3,7 +3,7 @@ package diff
 import (
 	"time"
 
-	"github.com/Fiye/utility"
+	"github.com/pericles-tpt/seye/utility"
 )
 
 type DiffType int64

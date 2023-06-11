@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Fiye/tree"
-	"github.com/Fiye/utility"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/pericles-tpt/seye/tree"
+	"github.com/pericles-tpt/seye/utility"
 )
 
 func TestGenerateIFPopulatedDir(t *testing.T) {
@@ -32,7 +32,7 @@ func TestGenerateIFPopulatedDir(t *testing.T) {
 		timeK, _ = time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", "2023-06-09 18:53:08.974341879 +1000 AEST")
 		expTree  = tree.FileTree{
 			Comprehensive:      false,
-			BasePath:           "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir",
+			BasePath:           "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir",
 			LastVisited:        populatedDirTree.LastVisited,
 			TimeTaken:          populatedDirTree.TimeTaken,
 			LastModifiedDirect: timeA,
@@ -43,7 +43,7 @@ func TestGenerateIFPopulatedDir(t *testing.T) {
 			NumFilesBelow:      7,
 			Files: []tree.File{
 				{
-					Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/A1",
+					Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/A1",
 					Hash: utility.HashLocation{
 						HashOffset: -1,
 					},
@@ -51,14 +51,14 @@ func TestGenerateIFPopulatedDir(t *testing.T) {
 					LastModified: timeC,
 				},
 				{
-					Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/B1",
+					Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/B1",
 					Hash: utility.HashLocation{
 						HashOffset: -1,
 					},
 					LastModified: timeD,
 				},
 				{
-					Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/C1",
+					Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/C1",
 					Hash: utility.HashLocation{
 						HashOffset: -1,
 					},
@@ -68,10 +68,10 @@ func TestGenerateIFPopulatedDir(t *testing.T) {
 			},
 			SubTrees: []tree.FileTree{{
 				Comprehensive: false,
-				BasePath:      "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/A",
+				BasePath:      "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/A",
 				Files: []tree.File{
 					{
-						Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/A/A",
+						Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/A/A",
 						Hash: utility.HashLocation{
 							HashOffset: -1,
 						},
@@ -79,7 +79,7 @@ func TestGenerateIFPopulatedDir(t *testing.T) {
 						LastModified: timeF,
 					},
 					{
-						Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/A/B",
+						Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/A/B",
 						Hash: utility.HashLocation{
 							HashOffset: -1,
 						},
@@ -87,14 +87,14 @@ func TestGenerateIFPopulatedDir(t *testing.T) {
 						LastModified: timeG,
 					},
 					{
-						Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/A/C",
+						Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/A/C",
 						Hash: utility.HashLocation{
 							HashOffset: -1,
 						},
 						LastModified: timeH,
 					},
 					{
-						Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/A/D",
+						Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/A/D",
 						Hash: utility.HashLocation{
 							HashOffset: -1,
 						},
@@ -114,21 +114,21 @@ func TestGenerateIFPopulatedDir(t *testing.T) {
 			},
 				{
 					Comprehensive: false,
-					BasePath:      "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/B",
+					BasePath:      "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/B",
 					LastVisited:   populatedDirTree.SubTrees[1].LastVisited,
 					TimeTaken:     populatedDirTree.SubTrees[1].TimeTaken,
 					Depth:         1,
 				},
 				{
 					Comprehensive: false,
-					BasePath:      "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/C",
+					BasePath:      "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/C",
 					LastVisited:   populatedDirTree.SubTrees[2].LastVisited,
 					TimeTaken:     populatedDirTree.SubTrees[2].TimeTaken,
 					Depth:         1,
 				},
 				{
 					Comprehensive: false,
-					BasePath:      "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/D",
+					BasePath:      "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/D",
 					LastVisited:   populatedDirTree.SubTrees[3].LastVisited,
 					TimeTaken:     populatedDirTree.SubTrees[3].TimeTaken,
 					Depth:         1,
@@ -235,7 +235,7 @@ func TestGenerateIFEmptyDir(t *testing.T) {
 // 		timeK, _ = time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", "2023-06-09 18:53:08.974341879 +1000 AEST")
 // 		expTree  = tree.FileTree{
 // 			Comprehensive:      false,
-// 			BasePath:           "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir",
+// 			BasePath:           "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir",
 // 			LastVisited:        populatedDirTree.LastVisited,
 // 			TimeTaken:          populatedDirTree.TimeTaken,
 // 			LastModifiedDirect: timeA,
@@ -246,7 +246,7 @@ func TestGenerateIFEmptyDir(t *testing.T) {
 // 			NumFilesBelow:      7,
 // 			Files: []tree.File{
 // 				{
-// 					Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/A1",
+// 					Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/A1",
 // 					Hash: utility.HashLocation{
 // 						HashOffset: -1,
 // 					},
@@ -254,14 +254,14 @@ func TestGenerateIFEmptyDir(t *testing.T) {
 // 					LastModified: timeC,
 // 				},
 // 				{
-// 					Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/B1",
+// 					Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/B1",
 // 					Hash: utility.HashLocation{
 // 						HashOffset: -1,
 // 					},
 // 					LastModified: timeD,
 // 				},
 // 				{
-// 					Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/C1",
+// 					Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/C1",
 // 					Hash: utility.HashLocation{
 // 						HashOffset: -1,
 // 					},
@@ -271,10 +271,10 @@ func TestGenerateIFEmptyDir(t *testing.T) {
 // 			},
 // 			SubTrees: []tree.FileTree{{
 // 				Comprehensive: false,
-// 				BasePath:      "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/A",
+// 				BasePath:      "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/A",
 // 				Files: []tree.File{
 // 					{
-// 						Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/A/A",
+// 						Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/A/A",
 // 						Hash: utility.HashLocation{
 // 							HashOffset: -1,
 // 						},
@@ -282,7 +282,7 @@ func TestGenerateIFEmptyDir(t *testing.T) {
 // 						LastModified: timeF,
 // 					},
 // 					{
-// 						Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/A/B",
+// 						Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/A/B",
 // 						Hash: utility.HashLocation{
 // 							HashOffset: -1,
 // 						},
@@ -290,14 +290,14 @@ func TestGenerateIFEmptyDir(t *testing.T) {
 // 						LastModified: timeG,
 // 					},
 // 					{
-// 						Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/A/C",
+// 						Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/A/C",
 // 						Hash: utility.HashLocation{
 // 							HashOffset: -1,
 // 						},
 // 						LastModified: timeH,
 // 					},
 // 					{
-// 						Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/A/D",
+// 						Name: "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/A/D",
 // 						Hash: utility.HashLocation{
 // 							HashOffset: -1,
 // 						},
@@ -317,21 +317,21 @@ func TestGenerateIFEmptyDir(t *testing.T) {
 // 			},
 // 				{
 // 					Comprehensive: false,
-// 					BasePath:      "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/B",
+// 					BasePath:      "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/B",
 // 					LastVisited:   populatedDirTree.SubTrees[1].LastVisited,
 // 					TimeTaken:     populatedDirTree.SubTrees[1].TimeTaken,
 // 					Depth:         1,
 // 				},
 // 				{
 // 					Comprehensive: false,
-// 					BasePath:      "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/C",
+// 					BasePath:      "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/C",
 // 					LastVisited:   populatedDirTree.SubTrees[2].LastVisited,
 // 					TimeTaken:     populatedDirTree.SubTrees[2].TimeTaken,
 // 					Depth:         1,
 // 				},
 // 				{
 // 					Comprehensive: false,
-// 					BasePath:      "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/Fiye/test/testDir/D",
+// 					BasePath:      "/Users/ptelemachou/Code/Work/Go_Projects/src/github.com/pericles-tpt/seye/test/testDir/D",
 // 					LastVisited:   populatedDirTree.SubTrees[3].LastVisited,
 // 					TimeTaken:     populatedDirTree.SubTrees[3].TimeTaken,
 // 					Depth:         1,
