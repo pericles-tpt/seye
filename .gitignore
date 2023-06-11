@@ -1,8 +1,8 @@
-Fiye
+seye
 config.json
 scans.json
 testingOutput/
-.scanRecords
+.scans
 records.json
 
 # Ignore binaries built with `go build -o ./bin/dirt ./cmd/cli && ./bin/dirt` and `go build -o ./bin/daemon ./cmd/daemon && ./bin/daemon`
