@@ -41,7 +41,7 @@ func Load() error {
 func (s *Config) Flush() error {
 	f, err := os.OpenFile(configPath, os.O_TRUNC|os.O_WRONLY, 0600)
 	if err != nil {
-		return errorx.Decorate(err, "unable to open file '%s' for 'flush'", cfg)
+		return errorx.Decorate(err, "unable to open file '%s' for 'flush'", configPath)
 	}
 
 	je := json.NewEncoder(f)
