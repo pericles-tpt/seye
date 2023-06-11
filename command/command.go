@@ -174,15 +174,13 @@ func Report(args []string, runPreviously bool) error {
 	fmt.Printf(" Took %d ms to traverse the tree", time.Since(timer).Milliseconds())
 
 	fmt.Printf("REPORT GENERATED FOR TREE WITH ROOT '%s'\n", newTree.BasePath)
-	fmt.Printf("Tree contains: %d files and is of size %d\n\n", newTree.NumFilesBelow, newTree.SizeBelow)
-
 	if ws.LargestFiles != nil {
 		i := 0
 		fmt.Printf("\n## The %d largest files are: ##\n", reportLargest)
 		for _, v := range *ws.LargestFiles {
 			fmt.Printf("'%s': %d bytes\n", v.Path, v.Size)
 			i++
-			if i >= int(reportDuplicates) {
+			if i >= int(reportLargest) {
 				break
 			}
 		}
@@ -191,10 +189,10 @@ func Report(args []string, runPreviously bool) error {
 	if ws.DuplicateMap != nil {
 		i := 0
 		fmt.Printf("## The %d largest duplicates are (other copies' names may differ): ##\n", reportDuplicates)
-		for _, v := range ws.GetLargestDuplicates(int(reportLargest)) {
+		for _, v := range ws.GetLargestDuplicates(int(reportDuplicates)) {
 			fmt.Printf("'%s': %d * %d bytes = %d bytes\n", v[0].Path, len(v), v[0].Size, len(v)*int(v[0].Size))
 			i++
-			if i >= int(reportLargest) {
+			if i >= int(reportDuplicates) {
 				break
 			}
 		}

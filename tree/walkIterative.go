@@ -313,6 +313,7 @@ func WalkTreeIterativeFile(rootPath string, depth int, isComprehensive bool, wal
 					AllHashByte:        &allHashBytes,
 					IsComprehensive:    isComprehensive,
 
+					WalkStats:  walkStats,
 					HashOffset: lenAllBytesBeforeChildren + i*chosenHash,
 					HashLength: chosenHash,
 				}, chosenThread)
