@@ -3,13 +3,15 @@ package tree
 import (
 	"bytes"
 	"encoding/gob"
+	"fmt"
 	"os"
+	"strings"
 
 	"github.com/joomcode/errorx"
 )
 
 /*
-A basic deep copy implementation, using `gob`
+Using `gob` to do a basic deep copy of a tree
 
 (useful when you want to modify an existing tree by adding a `ScanDiff` to it)
 */
@@ -30,7 +32,7 @@ func (tree *FileTree) DeepCopy() FileTree {
 func (tree *FileTree) WriteBinary(path string) error {
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
-		return errorx.Decorate(err, "failed to opem/create file for writing FileTree data")
+		return errorx.Decorate(err, "failed to open/create file for writing FileTree data")
 	}
 	defer f.Close()
 
@@ -49,4 +51,12 @@ func ReadBinary(path string) (FileTree, error) {
 	gd := gob.NewDecoder(f)
 	err = gd.Decode(&tree)
 	return tree, err
+}
+
+func getFullPath(dir, basepath string) string {
+	fullPath := fmt.Sprintf("%s/%s", dir, basepath)
+	if strings.HasSuffix(dir, "/") {
+		fullPath = fmt.Sprintf("%s%s", dir, basepath)
+	}
+	return fullPath
 }
