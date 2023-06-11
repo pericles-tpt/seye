@@ -70,6 +70,8 @@ var (
 	fileJobQueueLocks = []sync.Mutex{}
 	buildQS           = []FileTree{}
 	buildQSLock       = sync.Mutex{}
+
+	walkLock = sync.Mutex{}
 )
 
 /*
@@ -103,9 +105,11 @@ func readHashFile(rl ReadLocation, threadNum int) (utility.HashLocation, []strin
 			hl.HashOffset = rl.HashOffset
 			hl.HashLength = rl.HashLength
 
+			walkLock.Lock()
 			if rl.WalkStats != nil {
 				rl.WalkStats.UpdateDuplicates(hashedBytes[:], rl.Size, rl.FullPath)
 			}
+			walkLock.Unlock()
 		}
 	}
 	defer fTmp.Close()
@@ -153,9 +157,11 @@ func doFileJob(threadNum int) {
 		}
 	}
 
+	walkLock.Lock()
 	if currJob.WalkStats != nil {
 		currJob.WalkStats.UpdateLargestFiles(stats.BasicFile{Path: currJob.FullPath, Size: currJob.File.Size})
 	}
+	walkLock.Unlock()
 
 	buildQSLock.Lock()
 	buildQS[currJob.ParentIndexInQueue].Files[currJob.ThisIndexInFiles] = currJob.File
@@ -262,9 +268,11 @@ func doDirJob(threadNum int) {
 			}
 		}
 
+		walkLock.Lock()
 		if currJob.WalkStats != nil {
 			currJob.WalkStats.UpdateLargestFiles(stats.BasicFile{Path: nf.Name, Size: nf.Size})
 		}
+		walkLock.Unlock()
 
 		buildQLock.Lock()
 		buildQ[currJob.Depth][currJob.ThisIndexBuildQ].Files[i] = nf
@@ -323,9 +331,11 @@ func getFileDataS(rl ReadLocation, threadNum int) (utility.HashLocation, []strin
 			hl.HashOffset = rl.HashOffset
 			hl.HashLength = rl.HashLength
 
+			walkLock.Lock()
 			if rl.WalkStats != nil {
 				rl.WalkStats.UpdateDuplicates(hashedBytes[:], rl.Size, rl.FullPath)
 			}
+			walkLock.Unlock()
 		}
 	}
 	defer fTmp.Close()
