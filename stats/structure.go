@@ -1,6 +1,7 @@
 package stats
 
 const (
+	// TODO: Move this hardcoded value to a config
 	largestFilesLimit = 100
 )
 

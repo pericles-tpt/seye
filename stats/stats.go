@@ -1,22 +1,25 @@
 package stats
 
 import (
-	"io/fs"
 	"path"
 	"sort"
 )
 
-func (w *WalkStats) UpdateLargestFiles(filePath string, fInfo fs.FileInfo) {
+/*
+Add a `BasicFile`, in decreasing size order, to the array of largest files up
+to `largestFilesLimit` (largest at index 0)
+*/
+func (w *WalkStats) UpdateLargestFiles(file BasicFile) {
 	if w.LargestFiles == nil {
 		return
 	} else if len(*w.LargestFiles) == 0 {
-		*w.LargestFiles = append(*w.LargestFiles, BasicFile{Path: filePath, Size: fInfo.Size()})
+		*w.LargestFiles = append(*w.LargestFiles, file)
 		return
 	}
 
 	// Start from the bottom find the first place to insert it (if we can)
 	var (
-		thisFileSize     = fInfo.Size()
+		thisFileSize     = file.Size
 		smallerFileIndex = -1
 		largerFileIndex  = -1
 	)
@@ -38,10 +41,7 @@ func (w *WalkStats) UpdateLargestFiles(filePath string, fInfo fs.FileInfo) {
 			largerFileFound        = largerFileIndex > -1
 			smallerFileFound       = smallerFileIndex > -1
 			withinLargesFilesLimit = len((*w.LargestFiles)) < largestFilesLimit
-			newLargeFile           = BasicFile{
-				Path: filePath,
-				Size: fInfo.Size(),
-			}
+			newLargeFile           = file
 		)
 
 		if largerFileFound && !smallerFileFound && withinLargesFilesLimit {
@@ -62,6 +62,9 @@ func (w *WalkStats) UpdateLargestFiles(filePath string, fInfo fs.FileInfo) {
 	}
 }
 
+/*
+Add a `BasicFile` record to the `DuplicateMap`
+*/
 func (w *WalkStats) UpdateDuplicates(fileHashBytes []byte, fileSize int64, filePath string) {
 	if w.DuplicateMap == nil {
 		return
@@ -78,6 +81,10 @@ func (w *WalkStats) UpdateDuplicates(fileHashBytes []byte, fileSize int64, fileP
 	}
 }
 
+/*
+Sort the stored duplicates and return them in sorted order (0 -> n, largest -> smallest)
+duplicate size = num_duplicates * duplicate_size
+*/
 func (w *WalkStats) GetLargestDuplicates(limit int) [][]BasicFile {
 	var orderedDuplicates [][]BasicFile
 
@@ -97,5 +104,3 @@ func (w *WalkStats) GetLargestDuplicates(limit int) [][]BasicFile {
 
 	return orderedDuplicates
 }
-
-//go build && ./Fiye report /Users/ptelemachou/ -d=10 -l=10
