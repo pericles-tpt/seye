@@ -191,6 +191,15 @@ func Report(args []string, runPreviously bool) error {
 		fmt.Printf("## The %d largest duplicates are (other copies' names may differ): ##\n", reportDuplicates)
 		for _, v := range ws.GetLargestDuplicates(int(reportDuplicates)) {
 			fmt.Printf("'%s': %d * %d bytes = %d bytes\n", v[0].Path, len(v), v[0].Size, len(v)*int(v[0].Size))
+			for j, p := range v {
+				// TODO: Figure out why the first recorded duplicate doesn't have the full path
+				if j == 0 {
+					fmt.Printf("\t%s/%s\n", targetDir, p.Path)
+				} else {
+					fmt.Printf("\t%s\n", p.Path)
+				}
+			}
+			fmt.Println()
 			i++
 			if i >= int(reportDuplicates) {
 				break
