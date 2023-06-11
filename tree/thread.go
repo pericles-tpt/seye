@@ -260,7 +260,7 @@ func doDirJob(threadNum int) {
 					WalkStats:   currJob.WalkStats,
 					HashOffset:  lenAllBytesBeforeChildren + i*chosenHash,
 					HashLength:  chosenHash,
-					FullPath:    nf.Name,
+					FullPath:    fullPath,
 					Size:        nf.Size,
 					AllHashByte: currJob.AllHashByte,
 				}, threadNum)
