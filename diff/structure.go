@@ -9,7 +9,7 @@ import (
 type DiffType int64
 
 const (
-	changed DiffType = iota
+	modified DiffType = iota
 	same
 	renamed
 	removed
@@ -225,7 +225,7 @@ func (t *TreeDiff) addDiff(new *TreeDiff) {
 	}
 
 	switch new.Type {
-	case changed:
+	case modified:
 		t.Comprehensive = new.Comprehensive
 		t.NewerPath = new.NewerPath
 		t.DepthDiff += new.DepthDiff
@@ -287,7 +287,7 @@ func (f *FileDiff) addDiff(new *FileDiff, thisAllHash *[]byte, allHashNew *[]byt
 	}
 
 	switch new.Type {
-	case changed:
+	case modified:
 		f.NewerName = new.NewerName
 		f.NewerErr = new.NewerErr
 		f.LastModifiedDiff = new.LastModifiedDiff

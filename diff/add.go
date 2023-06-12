@@ -124,7 +124,7 @@ func addDiffToTree(t *tree.FileTree, d *TreeDiff) bool {
 		t.BasePath = d.NewerPath
 	case removed:
 		return true
-	case changed:
+	case modified:
 		fallthrough
 	case added:
 		t.Comprehensive = d.Comprehensive
@@ -168,7 +168,7 @@ func addDiffToFile(f *tree.File, d *FileDiff, diffAllHash, newTreeAllHash *[]byt
 		f.Name = d.NewerName
 	case removed:
 		return true, false
-	case changed:
+	case modified:
 		fallthrough
 	case added:
 		f.Name = d.NewerName
