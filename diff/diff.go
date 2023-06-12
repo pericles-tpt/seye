@@ -29,23 +29,35 @@ func diffFiles(a, b []tree.File, allHashesA, allHashesB, allHashDiff *[]byte, sD
 		// 1a. Compare THIS file in `a`, to each file in `b`, try to find one it matches with for the conditions listed in `var`
 		for j, fb := range b {
 			var (
-				nameSame   = fa.Name == fb.Name
-				modSame    = time.Time.Equal(fa.LastModified, fb.LastModified)
-				hashesSame = utility.HashesEqual(fa.Hash, fb.Hash, allHashesA, allHashesB)
+				nameSame        = fa.Name == fb.Name
+				modSame         = time.Time.Equal(fa.LastModified, fb.LastModified)
+				sizeSame        = fa.Size == fb.Size
+				isComprehensive = fa.Hash.HashOffset > -1 && fb.Hash.HashOffset > -1
 			)
 
-			if hashesSame {
-				if !nameSame {
-					fileRenamed = j
-				} else {
-					fileUnchanged = j
+			if isComprehensive {
+				hashesSame := utility.HashesEqual(fa.Hash, fb.Hash, allHashesA, allHashesB)
+				if hashesSame {
+					if !nameSame {
+						fileRenamed = j
+					} else {
+						fileUnchanged = j
+						break
+					}
+				} else if nameSame {
+					fileChanged = j
 				}
-			} else if !modSame {
-				fileChanged = j
-			}
-
-			if fileUnchanged >= 0 {
-				break
+			} else {
+				if nameSame {
+					if modSame && sizeSame {
+						fileUnchanged = j
+						break
+					} else {
+						fileChanged = j
+					}
+				} else if !nameSame && modSame && sizeSame {
+					fileRenamed = j
+				}
 			}
 		}
 
@@ -68,7 +80,7 @@ func diffFiles(a, b []tree.File, allHashesA, allHashesB, allHashDiff *[]byte, sD
 			lastAllHashByte := len(*allHashDiff) - 1
 
 			fDiff := FileDiff{
-				Type:             changed,
+				Type:             modified,
 				NewerName:        newer.Name,
 				SizeDiff:         newer.Size - older.Size,
 				NewerErr:         newer.Err,
@@ -244,7 +256,7 @@ func diffTrees(a, b []tree.FileTree, aHashes, bHashes, allHashDiff *[]byte, isCo
 			sDiff.Trees[ta.BasePath] = TreeDiff{
 				DiffCompleted: time.Now(),
 				Comprehensive: newer.Comprehensive,
-				Type:          changed,
+				Type:          modified,
 
 				NewerPath:              newer.BasePath,
 				FilesDiff:              changedFiles[i][treeChanged],
